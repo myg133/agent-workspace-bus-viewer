@@ -3,8 +3,26 @@
 从 git 的 **bus 分支**（消息体即 commit message）提取 Planner 与 BA 之间的全部沟通，
 生成一份自包含的 HTML 报告。
 
-对齐 `agent-workspace` 技能 **2026-10-25 版**（v2 消息格式：`expect` / `reply_by` / `re` / `result`），
-并支持跨 bus「代」聚合（`archive/bus-YYYYMMDD`）。
+> **这是 [agent-workspace](https://github.com/myg133/agent-workspace) 的配套工具。**
+> `agent-workspace` 规定「BA / Planner 之间的沟通只走 bus 分支的空 commit」，
+> 本仓库负责把这些 commit 还原成一份能读、能搜、能按 thread 聚合的报告——
+> 只读 bus，是那套流程的观测面，不改任何规范，也不替代 `aw.py msg`。
+
+对齐 `agent-workspace` 技能 **1.25.0（2026-10-25）** 的消息格式
+（v2：`expect` / `reply_by` / `re` / `result`），并支持跨 bus「代」聚合（`archive/bus-YYYYMMDD`）。
+
+## 与 agent-workspace 的分工
+
+| | [agent-workspace](https://github.com/myg133/agent-workspace) | 本仓库 |
+|---|---|---|
+| 定位 | 流程与规范：worktree 布局、角色、状态机、认领、契约 | 观测：把 bus 上的沟通变成报告 |
+| 写 bus | ✅ `aw.py msg send` / `ack` / `reply` | ❌ 全程只读，从不写任何 ref |
+| 读 bus | `msg inbox`（自己的收件箱，按 agent 计已读） | 全量视角（所有消息、所有 thread、所有代） |
+| 依赖 | Python 3.8+ · git | Bun / Deno / Node · git |
+
+消息格式、`expect` 语义、代（generation）规则都以 `agent-workspace` 的
+`references/global/messaging.md` 和 `scripts/aw.py` 为准；本仓库只跟随，不发明。
+格式变了，改这边一处解析即可。
 
 ## 为什么是 git 分支
 
@@ -263,6 +281,7 @@ bus-report/
 ├── bus-report.ts              # CLI（解析 / 聚合 / 生成 / watch / serve）
 ├── viewer.template.html       # 页面模板（改样式改这里）
 ├── agents.alias.example.json  # 别名映射示例（复制成 agents.alias.json 用）
+├── LICENSE                    # MIT
 ├── .gitignore
 └── out/                       # 默认输出目录（.gitignore 已忽略）
     ├── ba-bus-communication.html
@@ -320,3 +339,12 @@ git grep -n -E 'gitlab|username|/Users/|C:\\' || echo "干净"
 排序按消息时间（author date）真实排序，不是简单数组反转——转述/补发会让 author date
 与提交顺序倒挂（实测占比约 3%，首尾对调会把「最新」排到中间）。
 `meta.range` 同样取真实最早/最晚，而不是数组首尾。
+
+## 相关
+
+- [agent-workspace](https://github.com/myg133/agent-workspace) — 流程与规范源头，bus 消息格式以它为准
+- [agent-workspace · messaging.md](https://github.com/myg133/agent-workspace/blob/main/skills/agent-workspace/references/global/messaging.md) — 消息字段、`expect` 语义、代（generation）规则
+
+## License
+
+[MIT](LICENSE) © 2026 myg133
