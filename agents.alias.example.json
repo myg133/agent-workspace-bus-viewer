@@ -1,0 +1,14 @@
+{
+  "pc-a-ba-1": {
+    "label": "Alice",
+    "role": "Planner · 裁定优先级、边界、契约"
+  },
+  "pc-b-ba-1": {
+    "label": "Bob",
+    "role": "BA · REQ-001 认领方"
+  },
+  "pc-b-ba-2": {
+    "label": "Carol",
+    "role": "BA · 前端"
+  }
+}

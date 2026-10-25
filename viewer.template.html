@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BA Bus 沟通梳理</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --fg:#e6e9ef; --fg2:#a8b0c0; --fg3:#6f7889;
+  --acc:#5b9dff;
+  --dec:#4c6ef5; --hand:#0ca678; --fyi:#868e96; --q:#ae3ec9; --blk:#e03131;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.92em}
+header{padding:28px 32px 22px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#161a22,#0f1115)}
+h1{margin:0 0 6px;font-size:22px;letter-spacing:.3px}
+.sub{color:var(--fg2);font-size:13px}
+.sub b{color:var(--fg)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px 64px}
+section{margin:34px 0 0}
+h2{font-size:16px;margin:0 0 14px;padding-left:10px;border-left:3px solid var(--acc)}
+h3{font-size:14px;margin:20px 0 10px;color:var(--fg2)}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(560px,1fr))}
+@media(max-width:900px){.g4,.g3,.g2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stat .n{font-size:30px;font-weight:650;line-height:1.1;
+  background:linear-gradient(180deg,#fff,#9fb6d8);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent}
+.stat .l{color:var(--fg3);font-size:12px;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--fg3);font-weight:600;font-size:12px;text-transform:uppercase;
+  letter-spacing:.4px}
+tbody tr:hover{background:var(--panel2)}
+.bar{height:8px;background:var(--acc);border-radius:4px;display:inline-block;
+  vertical-align:middle}
+.mono{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--fg3);
+  display:inline-block;max-width:190px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;vertical-align:bottom}
+.bar{height:8px;background:var(--acc);border-radius:4px;display:inline-block;
+  vertical-align:middle}
+.chip{display:inline-block;padding:1px 8px;margin:1px 3px 1px 0;border-radius:20px;
+  background:#252a35;border:1px solid var(--line);color:var(--fg2);font-size:12px;
+  white-space:nowrap}
+.chip.known{background:#1d2b45;border-color:#2f4a7a;color:#bcd4ff}
+.chip.none{color:var(--fg3);font-style:italic}
+.cc{margin-left:8px;font-size:12px;color:var(--fg3)}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;margin:10px 0}
+.msg-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.idx{color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}
+.t-decision,.t-handoff,.t-fyi,.t-question,.t-blocker,.t-status,
+.t-contract-ack,.t-contract-change,.t-decision-request,.t-registration,
+.t-offer,.t-unknown{padding:1px 9px;border-radius:5px;font-size:12px;
+  font-weight:600}
+.t-decision{background:rgba(76,110,245,.18);color:#91a7ff}
+.t-handoff{background:rgba(12,166,120,.18);color:#63e6be}
+.t-fyi{background:rgba(134,142,150,.16);color:#b6bdc8}
+.t-question{background:rgba(174,62,201,.18);color:#da8fff}
+.t-blocker{background:rgba(224,49,49,.18);color:#ff8787}
+.t-status{background:rgba(255,169,77,.16);color:#ffc078}
+.t-contract-ack{background:rgba(81,207,102,.16);color:#8ce99a}
+.t-contract-change{background:rgba(255,169,77,.16);color:#ffc078}
+.t-decision-request{background:rgba(76,110,245,.16);color:#91a7ff}
+.t-registration,.t-offer{background:rgba(91,157,255,.16);color:#a5c8ff}
+.t-unknown{background:#2a2f3a;color:var(--fg3)}
+.pri{padding:1px 8px;border-radius:5px;font-size:12px;font-weight:600}
+.pri-p0{background:rgba(255,107,107,.16);color:#ff8787}
+.pri-p1{background:rgba(255,169,77,.16);color:#ffc078}
+.pri-p2{background:rgba(81,207,102,.14);color:#8ce99a}
+.pri-p3{background:rgba(134,142,150,.16);color:#b6bdc8}
+.pri-none{background:#252a35;color:var(--fg3)}
+.mid{color:var(--fg3);font-size:12px;font-family:ui-monospace,Consolas,monospace}
+.time{color:var(--fg3);font-size:12px;margin-left:auto}
+.decl{color:#ffc078;font-size:11px;margin-left:2px;cursor:help}
+/* v2 消息格式：expect / re / result 标签 */
+.exp{font-size:11.5px;padding:1px 7px;border-radius:5px;border:1px solid var(--line);
+  background:#252a35;color:var(--fg2);white-space:nowrap}
+.exp-open{border-color:#6b4a2f;background:#322616;color:#ffc078}
+.exp-done{border-color:#2f6b4a;background:#16321f;color:#8ce99a}
+.rel{font-size:11.5px;color:var(--fg3);font-family:ui-monospace,Consolas,monospace}
+.gen{font-size:11px;color:var(--fg3);border:1px dashed var(--line);border-radius:5px;
+  padding:0 6px;white-space:nowrap}
+.res-ok{color:#8ce99a;font-size:11.5px}
+.res-no{color:#ff8787;font-size:11.5px}
+.msg-route{align-items:center;margin-bottom:6px}
+.arrow{color:var(--fg3);margin:0 6px}
+.ref{color:var(--fg3);font-size:12px;font-family:ui-monospace,Consolas,monospace;
+  word-break:break-all;margin:2px 0}
+pre.body{margin:8px 0 6px;padding:12px 14px;background:#11141a;
+  border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;
+  word-break:break-word;font:12.5px/1.65 ui-monospace,Consolas,monospace;
+  color:#cfd6e4}
+.msg-foot{display:flex;gap:12px;align-items:baseline;font-size:12px;color:var(--fg3)}
+.subj{color:var(--fg3);opacity:.8;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.thread{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  margin:10px 0;overflow:hidden}
+.thread-head{padding:11px 16px;background:var(--panel2);
+  border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;
+  align-items:center;cursor:pointer;user-select:none}
+.thread-head:hover{background:#252a35}
+.thread-body{padding:4px 8px 8px}
+.hidden{display:none !important}
+.tcount{color:var(--fg3);font-size:12px;margin-left:auto}
+.collapsed .thread-body{display:none}
+.tarrow{color:var(--fg3);transition:transform .15s}
+.collapsed .tarrow{transform:rotate(-90deg)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+input[type=search]{background:#11141a;border:1px solid var(--line);border-radius:8px;
+  padding:8px 12px;color:var(--fg);font-size:13px;min-width:260px;flex:1}
+.ledger{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--fg3)}
+#cnt{color:var(--fg2);font-variant-numeric:tabular-nums}
+.note{color:var(--fg3);font-size:12px;margin-top:8px;line-height:1.7}
+.badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:11.5px;
+  border:1px solid var(--line);background:#252a35;color:var(--fg2)}
+.badge.live{border-color:#2f6b4a;background:#16321f;color:#8ce99a}
+.badge.stale{border-color:#6b4a2f;background:#322616;color:#ffc078}
+.loadbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+button{background:#252a35;border:1px solid var(--line);color:var(--fg);
+  border-radius:7px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+button:hover{background:#2f3644}
+#err{display:none;background:rgba(224,49,49,.12);border:1px solid #6b2b2b;
+  color:#ff8787;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>BA Bus 沟通梳理</h1>
+  <div class="sub">
+    <span id="hd-meta">加载中…</span>
+  </div>
+  <div class="loadbar">
+    <span id="src-badge" class="badge">数据源：—</span>
+    <span id="gen-badge" class="badge">生成时间：—</span>
+    <button id="reload" title="服务端会增量 fetch 一次 bus 分支">刷新数据</button>
+  </div>
+</header>
+<div class="wrap">
+  <div id="err"></div>
+
+  <section>
+    <h2>总览</h2>
+    <div class="grid g4">
+      <div class="card stat"><div class="n" id="s-msg">—</div><div class="l">bus 消息总数</div></div>
+      <div class="card stat"><div class="n" id="s-thread">—</div><div class="l">沟通 thread（话题）</div></div>
+      <div class="card stat"><div class="n" id="s-agent">—</div><div class="l">参与 Agent</div></div>
+      <div class="card stat"><div class="n" id="s-top">—</div><div class="l">发出最多的 Agent</div></div>
+      <div class="card stat"><div class="n" id="s-open">—</div><div class="l">待结清（欠回复）</div></div>
+    </div>
+    <div class="note" id="s-note"></div>
+  </section>
+
+  <section>
+    <h2>待结清 <span id="p-count" style="color:var(--fg3);font-size:12px;font-weight:400"></span></h2>
+    <div id="pending"></div>
+    <div class="note" id="p-note"></div>
+  </section>
+
+  <section>
+    <h2>参与者</h2>
+    <div class="grid g2">
+      <div class="card"><table id="tb-agents"></table></div>
+      <div class="card"><table id="tb-edges"></table></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>消息类型与节奏</h2>
+    <div class="grid g3">
+      <div class="card"><h3>类型</h3><table id="tb-type"></table></div>
+      <div class="card"><h3>优先级</h3><table id="tb-pri"></table></div>
+      <div class="card"><h3>每日消息量</h3><table id="tb-day"></table></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>沟通 topic（thread）</h2>
+    <div class="filters">
+      <input type="search" id="q" placeholder="搜索消息内容 / Agent / ID / 主题…">
+      <span class="ledger">
+        <label><input type="checkbox" id="descOrder" checked> 最新在前</label>
+        <label><input type="checkbox" id="onlyThreads"> 只看多消息 thread</label>
+        <span id="cnt"></span>
+      </span>
+    </div>
+    <div id="threads"></div>
+  </section>
+
+  <section>
+    <h2>完整时间线</h2>
+    <div id="timeline"></div>
+  </section>
+</div>
+
+<!-- 数据文件名：外部数据按需注入（实时模式不下载快照，避免双份传输） -->
+<script>window.__BUS_DATA_FILE__ = "{{DATA_FILE}}";</script>
+<!-- 内嵌快照：所有外部数据都拿不到时的兜底 -->
+<script id="bus-data-embedded" type="application/json">{{EMBEDDED_JSON}}</script>
+<script>
+(function () {
+  "use strict";
+
+  var TYPE_CN = {
+    decision: "裁决", handoff: "交付交接", fyi: "知会", question: "提问",
+    blocker: "阻塞", status: "状态", "contract-ack": "契约确认",
+    "contract-change": "契约变更", "decision-request": "裁决请求",
+    registration: "注册", offer: "接单意向", unknown: "未分类"
+  };
+  var PRI_CN = { p0: "P0 最高", p1: "P1", p2: "P2", p3: "P3", "": "—" };
+  var EXPECT_CN = { none: "无需回复", ack: "需回执", reply: "需回复", "": "—" };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  var state = { data: null, agentsById: {}, search: "", only: false, desc: true };
+
+  // 展示顺序：默认最新在前。按消息时间（at）排序，同一时间保持原提交顺序。
+  // 不能直接 reverse 数组：author date 与提交顺序并不总是一致（转述/补发会倒挂）。
+  function ordered() {
+    var items = (state.data ? state.data.messages : []).map(function (m, k) {
+      return { m: m, k: k, t: Date.parse(m.at) || 0 };
+    });
+    items.sort(function (a, b) {
+      return state.desc
+        ? (b.t - a.t) || (b.k - a.k)
+        : (a.t - b.t) || (a.k - b.k);
+    });
+    items.forEach(function (x, i) { x.i = i + 1; });
+    return items;
+  }
+
+  // ── 取数据：外部 bus-data.js 优先，失败回退内嵌
+  function pickData() {
+    if (window.__BUS_DATA__ && window.__BUS_DATA__.messages) {
+      return { data: window.__BUS_DATA__, source: "external" };
+    }
+    try {
+      var el = document.getElementById("bus-data-embedded");
+      var parsed = JSON.parse(el.textContent || "{}");
+      if (parsed.messages) return { data: parsed, source: "embedded" };
+    } catch (e) { /* 内嵌解析失败 */ }
+    return { data: null, source: "none" };
+  }
+
+  // 时间统一按北京时间（UTC+8）展示。
+  // 服务端已输出 +08:00，这里再折算一次：不论数据是 Z 还是别的偏移（旧服务 / 旧快照），
+  // 都能正确显示成北京时间。
+  var CN_OFFSET = 8 * 3600 * 1000;
+
+  function fmtTime(at) {
+    if (at == null || at === "") return "";
+    var t = Date.parse(at);
+    if (isNaN(t)) return String(at);
+    var d = new Date(t + CN_OFFSET);
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getUTCFullYear() + "-" + p(d.getUTCMonth() + 1) + "-" + p(d.getUTCDate()) +
+      " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + ":" + p(d.getUTCSeconds());
+  }
+
+  function fmtShort(at) {
+    return fmtTime(at).slice(5, 16); // MM-DD HH:MM
+  }
+
+  function dayKey(at) {
+    return fmtTime(at).slice(0, 10); // 北京日期，跨零点不会落错天
+  }
+
+  // 消息体里手写的 at 与真实提交时间不一致时，用 * 标注并给出两者（悬停可见）。
+  // 只标 >= 1 分钟的差：秒级差异多半只是取整，标出来是噪音。
+  function timeCell(m) {
+    var dt = m.declaredAt ? Date.parse(m.declaredAt) : NaN;
+    var at = Date.parse(m.at);
+    var mismatch = !isNaN(dt) && !isNaN(at) && Math.abs(dt - at) >= 60000;
+    var title = mismatch
+      ? ' title="提交时间 ' + esc(fmtTime(m.at)) + '；消息体声明 ' +
+        esc(fmtTime(m.declaredAt)) + '。时间线以提交时间为准。"'
+      : "";
+    return '<span class="time"' + title + ">" + esc(fmtTime(m.at)) +
+      (mismatch ? '<span class="decl">*</span>' : "") + "</span>";
+  }
+
+  function chip(id) {
+    if (id === "all") {
+      return '<span class="chip none" title="广播到全体">全体</span>';
+    }
+    if (id === "unknown") {
+      return '<span class="chip none" title="消息头部缺失或不完整">（未署名）</span>';
+    }
+    if (String(id).indexOf("role:") === 0) {
+      return '<span class="chip none" title="按角色广播">角色 ' +
+        esc(String(id).slice(5)) + "</span>";
+    }
+    var a = state.agentsById[id];
+    var label = a ? a.label : id;
+    var known = a ? " known" : "";
+    return '<span class="chip' + known + '" title="' + esc(id) + '">' + esc(label) + "</span>";
+  }
+
+  // v2：反馈义务标签。已结清（有人用 re: <id> 回过）为绿色，未结清为橙色。
+  function expChip(m) {
+    if (!m.expect || m.expect === "none") return "";
+    var done = !!m.settledBy;
+    var title = done
+      ? "已由消息 " + m.settledBy + " 结清"
+      : "尚无 re 回执";
+    if (m.reply_by) title += "；期望回复：" + m.reply_by;
+    return '<span class="exp ' + (done ? "exp-done" : "exp-open") + '" title="' +
+      esc(title) + '">' + esc(EXPECT_CN[m.expect] || m.expect) +
+      (done ? " ✓" : " ⏳") + "</span>";
+  }
+
+  function multiGen() {
+    return !!(state.data && state.data.meta.generations &&
+      state.data.meta.generations.length > 1);
+  }
+
+  function msgCard(m, i, compact) {
+    var body = m.body || m.subject || "";
+    var t = TYPE_CN[m.type] || m.type;
+    var p = PRI_CN[m.priority] || m.priority || "—";
+    var href = m.url && m.url.indexOf("http") === 0
+      ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.sha.slice(0, 12)) + "</a>"
+      : '<span>' + esc(m.sha.slice(0, 12)) + "</span>";
+    return '<div class="msg"' + (compact ? ' style="margin:6px 0"' : "") + '>' +
+      '<div class="msg-head">' +
+      '<span class="idx">#' + i + "</span>" +
+      '<span class="t-' + esc(m.type || "unknown") + '">' + esc(t) + "</span>" +
+      '<span class="pri pri-' + esc(m.priority || "none") + '">' + esc(p) + "</span>" +
+      expChip(m) +
+      (multiGen() && m.generation
+        ? '<span class="gen" title="所属 bus 代">' + esc(m.generation) + "</span>"
+        : "") +
+      '<span class="mid">id ' + esc(m.id) + "</span>" +
+      timeCell(m) +
+      "</div>" +
+      '<div class="msg-route">' + chip(m.from) +
+      '<span class="arrow">&rarr;</span>' +
+      (m.to && m.to.length
+        ? m.to.map(chip).join("")
+        : '<span class="chip none">（广播/无指定收件人）</span>') +
+      (m.cc && m.cc.length
+        ? '<span class="cc">cc ' + m.cc.map(chip).join("") + "</span>"
+        : "") +
+      "</div>" +
+      (m.ref ? '<div class="ref">ref: ' + esc(m.ref) + "</div>" : "") +
+      (m.thread ? '<div class="ref">thread: ' + esc(m.thread) + "</div>" : "") +
+      '<pre class="body">' + esc(body) + "</pre>" +
+      '<div class="msg-foot">' + href +
+      (m.re ? '<span class="rel" title="本条回的是哪条消息">↩ re ' + esc(m.re) + "</span>" : "") +
+      (m.result
+        ? '<span class="' + (m.result === "ok" ? "res-ok" : "res-no") + '">result ' +
+          esc(m.result) + "</span>"
+        : "") +
+      '<span class="subj">' + esc(m.subject) + "</span></div></div>";
+  }
+
+  function table(el, head, rows) {
+    var h = "<thead><tr>" +
+      head.map(function (x) { return "<th>" + esc(x) + "</th>"; }).join("") +
+      "</tr></thead><tbody>";
+    rows.forEach(function (r) {
+      h += "<tr>" + r.map(function (c) {
+        return "<td>" + c + "</td>";
+      }).join("") + "</tr>";
+    });
+    el.innerHTML = h + "</tbody>";
+  }
+
+  function barTable(el, counter, labelMap) {
+    var items = Object.keys(counter).map(function (k) { return [k, counter[k]]; });
+    items.sort(function (a, b) { return b[1] - a[1]; });
+    var max = items.length ? items[0][1] : 1;
+    var h = "<tbody>";
+    items.forEach(function (e) {
+      var w = Math.round((e[1] * 100) / max);
+      h += '<tr><td style="width:40%">' + esc(labelMap ? (labelMap[e[0]] || e[0]) : e[0]) +
+        '</td><td style="width:10%"><b>' + e[1] + "</b></td>" +
+        '<td><span class="bar" style="width:' + w + '%"></span></td></tr>';
+    });
+    el.innerHTML = h + "</tbody>";
+  }
+
+  function renderAgents() {
+    var rows = state.data.agents.map(function (a) {
+      return [
+        "<b>" + esc(a.label) + "</b>",
+        '<span class="mono">' + esc(a.id) + "</span>",
+        String(a.sent),
+        String(a.received),
+        a.role
+          ? '<span style="color:var(--fg2)">' + esc(a.role) + "</span>"
+          : '<span style="color:var(--fg3)">—</span>',
+      ];
+    });
+    table(document.getElementById("tb-agents"),
+      ["Agent", "稳定 ID", "发出", "收到", "角色"], rows);
+
+    var erows = state.data.agents.map(function (a) {
+      var top = a.primary.map(function (p) {
+        var t = state.agentsById[p.id];
+        return esc(t ? t.label : p.id) + " <b>" + p.count + "</b>";
+      }).join("　");
+      return ["<b>" + esc(a.label) + "</b>",
+        top || '<span style="color:var(--fg3)">—</span>'];
+    });
+    table(document.getElementById("tb-edges"), ["发送方", "主要收件方（条数）"], erows);
+  }
+
+  function renderStats() {
+    var msgs = state.data.messages;
+    var types = {}, pris = {}, days = {}, threads = {};
+    msgs.forEach(function (m) {
+      types[m.type || "unknown"] = (types[m.type || "unknown"] || 0) + 1;
+      pris[m.priority || ""] = (pris[m.priority || ""] || 0) + 1;
+      var d = dayKey(m.at);
+      days[d] = (days[d] || 0) + 1;
+      var k = m.thread || "(no-thread)";
+      threads[k] = (threads[k] || 0) + 1;
+    });
+    barTable(document.getElementById("tb-type"), types, TYPE_CN);
+    barTable(document.getElementById("tb-pri"), pris, PRI_CN);
+    barTable(document.getElementById("tb-day"), days, null);
+  }
+
+  // 取一组消息里时间最早 / 最晚的那条（与展示顺序无关）
+  function pickEdge(arr, newest) {
+    var best = arr[0], bestT = Date.parse(arr[0].m.at) || 0;
+    arr.forEach(function (x) {
+      var t = Date.parse(x.m.at) || 0;
+      if (newest ? t > bestT : t < bestT) { best = x; bestT = t; }
+    });
+    return best.m;
+  }
+
+  function renderThreads() {
+    var groups = {};
+    ordered().forEach(function (x) {
+      var k = x.m.thread || "(no-thread)";
+      (groups[k] = groups[k] || []).push(x);
+    });
+    var keys = Object.keys(groups).sort(function (a, b) {
+      var la = pickEdge(groups[a], true).at;
+      var lb = pickEdge(groups[b], true).at;
+      return lb < la ? -1 : lb > la ? 1 : 0;
+    });
+    var html = '<div id="tlist">';
+    keys.forEach(function (k) {
+      var arr = groups[k];
+      var open = pickEdge(arr, false);   // thread 的发起消息：标题与类型取它
+      var latest = pickEdge(arr, true);  // 最近一条：用于排序与时间跨度
+      var types = Array.from(new Set(arr.map(function (x) { return x.m.type || "unknown"; })));
+      var subj = String(open.subject || "").replace(/^\[msg\]\s*\S*\s*/, "").trim();
+      var hay = (subj + " " + arr.map(function (x) {
+        return (x.m.body || "") + " " + x.m.from + " " + x.m.id;
+      }).join(" ")).toLowerCase();
+      html += '<div class="thread" data-thread="' + esc(k) + '" data-hay="' + esc(hay) + '">' +
+        '<div class="thread-head"><span class="tarrow">&#9662;</span><b>' + esc(k) + "</b>" +
+        '<span class="t-' + esc(open.type || "unknown") + '">' + esc(types.join(",")) + "</span>" +
+        '<span style="color:var(--fg2);font-size:13px">' + esc(subj.slice(0, 120)) +
+        (subj.length > 120 ? "…" : "") + "</span>" +
+        '<span class="tcount">' + arr.length + " 条 · " +
+        esc(fmtShort(open.at)) + " → " +
+        esc(fmtShort(latest.at)) + "</span></div>" +
+        '<div class="thread-body">' +
+        arr.map(function (x) { return msgCard(x.m, x.i, false); }).join("") +
+        "</div></div>";
+    });
+    html += "</div>";
+    document.getElementById("threads").innerHTML = html;
+
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".thread-head"), function (h) {
+        h.addEventListener("click", function () {
+          h.parentElement.classList.toggle("collapsed");
+        });
+      }
+    );
+  }
+
+  function renderTimeline() {
+    var html = '<div id="tline">';
+    ordered().forEach(function (x) {
+      html += msgCard(x.m, x.i, true);
+    });
+    document.getElementById("timeline").innerHTML = html + "</div>";
+  }
+
+  function applyFilter() {
+    var s = state.search.trim().toLowerCase();
+    var only = state.only;
+    var vis = 0, total = 0;
+    Array.prototype.forEach.call(
+      document.querySelectorAll("#tlist .thread"), function (t) {
+        total++;
+        var ok = !s || t.getAttribute("data-hay").indexOf(s) >= 0;
+        if (ok && only) {
+          ok = t.querySelectorAll(".msg").length > 1;
+        }
+        t.classList.toggle("hidden", !ok);
+        if (ok) vis++;
+      }
+    );
+    var vism = 0;
+    Array.prototype.forEach.call(
+      document.querySelectorAll("#tline .msg"), function (m) {
+        var ok = !s || m.textContent.toLowerCase().indexOf(s) >= 0;
+        m.classList.toggle("hidden", !ok);
+        if (ok) vism++;
+      }
+    );
+    document.getElementById("cnt").textContent =
+      (s || only)
+        ? "显示 " + vis + " / " + total + " 个 thread，" + vism + " / " +
+          state.data.messages.length + " 条消息"
+        : total + " 个 thread · " + state.data.messages.length + " 条消息";
+  }
+
+  function renderPending() {
+    var msgs = state.data.messages || [];
+    var withExpect = msgs.filter(function (m) {
+      return m.expect && m.expect !== "none";
+    });
+    var open = withExpect.filter(function (m) { return !m.settledBy; });
+    open.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
+
+    document.getElementById("p-count").textContent = withExpect.length
+      ? "（" + open.length + " 未结清 / " + withExpect.length + " 条有反馈义务）"
+      : "";
+
+    var el = document.getElementById("pending");
+    var note = document.getElementById("p-note");
+    if (!withExpect.length) {
+      el.innerHTML = '<div class="note" style="color:var(--fg3)">' +
+        "当前数据里没有带 <code>expect</code> 的消息 —— 旧格式（v1）消息没有该字段，" +
+        "只有 v2 起才会声明反馈义务。</div>";
+      note.textContent = "";
+      return;
+    }
+    if (!open.length) {
+      el.innerHTML = '<div class="card" style="border-color:#2f6b4a;color:#8ce99a">' +
+        "✓ 全部已结清：所有 expect=ack/reply 的消息都有人用 <code>re: &lt;id&gt;</code> 回过。</div>";
+    } else {
+      el.innerHTML = open.map(function (m) {
+        return '<div class="card" style="margin:8px 0;border-color:#6b4a2f">' +
+          '<div class="msg-head">' +
+          '<span class="exp exp-open">' + esc(EXPECT_CN[m.expect] || m.expect) + " ⏳</span>" +
+          '<span class="t-' + esc(m.type || "unknown") + '">' +
+          esc(TYPE_CN[m.type] || m.type) + "</span>" +
+          '<span class="pri pri-' + esc(m.priority || "none") + '">' +
+          esc(PRI_CN[m.priority] || m.priority || "—") + "</span>" +
+          '<span class="mid">id ' + esc(m.id) + "</span>" +
+          '<span class="time">' + esc(fmtTime(m.at)) + "</span></div>" +
+          '<div class="msg-route">' + chip(m.from) + '<span class="arrow">&rarr;</span>' +
+          (m.to && m.to.length ? m.to.map(chip).join("") : '<span class="chip none">广播</span>') +
+          "</div>" +
+          (m.reply_by
+            ? '<div class="ref">期望回复：<b>' + esc(m.reply_by) + "</b></div>"
+            : "") +
+          (multiGen() ? '<div class="ref">代：' + esc(m.generation) + "</div>" : "") +
+          '<div class="ref" style="color:var(--fg2)">' +
+          esc(String(m.subject || "").slice(0, 180)) + "</div></div>";
+      }).join("");
+    }
+    note.innerHTML = "判定规则：<code>expect=ack/reply</code> 的消息若被后来消息的 " +
+      "<code>re: &lt;id&gt;</code> 引用即视为结清；欠回复会在 aw.py 里挡住 <code>claim next</code> / " +
+      "<code>agent exit</code>。";
+  }
+
+  function renderAll() {
+    var d = state.data;
+    state.agentsById = {};
+    d.agents.forEach(function (a) { state.agentsById[a.id] = a; });
+
+    document.getElementById("hd-meta").innerHTML =
+      "<b>" + esc(d.meta.ref) + "</b> · <b>" + d.meta.counts.messages +
+      "</b> 条消息 · <b>" + d.meta.counts.threads + "</b> 个 thread · <b>" +
+      d.meta.counts.agents + "</b> 个参与 Agent · 跨度 <b>" +
+      esc(fmtTime(d.meta.range.from).slice(0, 16)) + "</b> → <b>" +
+      esc(fmtTime(d.meta.range.to).slice(0, 16)) + "</b>" +
+      (d.meta.counts.openExpect ? " · 待结清 <b>" + d.meta.counts.openExpect + "</b>" : "");
+
+    document.getElementById("s-msg").textContent = d.meta.counts.messages;
+    document.getElementById("s-thread").textContent = d.meta.counts.threads;
+    document.getElementById("s-agent").textContent = d.meta.counts.agents;
+    var top = d.agents[0];
+    document.getElementById("s-top").textContent = top ? top.label : "—";
+    document.getElementById("s-open").textContent = d.meta.counts.openExpect == null
+      ? "—" : d.meta.counts.openExpect;
+
+    document.getElementById("s-note").innerHTML =
+      "数据来自 git <code>" + esc(d.meta.ref) + "</code> 分支，commit <code>" +
+      esc(String(d.meta.tip).slice(0, 12)) + "</code>；消息体即 commit message。" +
+      "页面所有时间均为<b>北京时间（UTC+8）</b>，时间线以 <b>commit 提交时间</b>为准；" +
+      "消息体里手写的 <code>at:</code> 若与之不一致会标 <span class=\"decl\">*</span>（悬停看两者）。" +
+      (state.source === "live"
+        ? "本页由本地服务实时驱动：点「刷新数据」会让服务端增量 fetch 一次 bus 再重绘，页面不重载。"
+        : "本页优先加载同目录的 <code>" + esc(d.meta.dataFile) +
+          "</code>，加载失败才回退内嵌快照 —— 跑 <code>bus-report serve</code> 即可开启实时刷新。");
+
+    var badge = document.getElementById("src-badge");
+    var live = state.source === "live";
+    badge.textContent = "数据源：" + (live
+      ? "实时（服务端 fetch " + (d.meta.remote || d.meta.ref) + "）"
+      : state.source === "external"
+        ? "外部 " + d.meta.dataFile + "（已是最新）"
+        : "内嵌快照（外部文件未加载）");
+    badge.className = "badge " + (live || state.source === "external" ? "live" : "stale");
+    document.getElementById("gen-badge").textContent =
+      "生成时间：" + fmtTime(d.meta.generatedAt).slice(0, 19) + "（北京时间）";
+
+    renderAgents();
+    renderStats();
+    renderPending();
+    renderThreads();
+    renderTimeline();
+    applyFilter();
+  }
+
+  // 按需注入同目录数据文件（file:// / 纯静态托管时的数据来源）
+  function injectDataScript(bust) {
+    return new Promise(function (resolve) {
+      var s = document.createElement("script");
+      s.src = "./" + (window.__BUS_DATA_FILE__ || "bus-data.js") +
+        (bust ? "?t=" + Date.now() : "");
+      s.onload = function () { resolve(true); };
+      s.onerror = function () { resolve(false); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function load() {
+    // 1) 有 bus-report serve 在跑：直接走实时接口
+    fetch("api/bus", { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        if (!d || !d.messages) throw new Error("数据为空");
+        applyData(d, "live");
+      })
+      // 2) 没有服务（file:// 或纯静态服务）：退回数据文件 / 内嵌快照
+      .catch(function () {
+        return injectDataScript(false).then(loadSnapshot, loadSnapshot);
+      });
+  }
+
+  function applyData(data, source) {
+    state.data = data;
+    state.source = source;
+    document.getElementById("err").style.display = "none";
+    renderAll();
+  }
+
+  function loadSnapshot() {
+    var picked = pickData();
+    if (!picked.data) {
+      var err = document.getElementById("err");
+      err.style.display = "block";
+      err.textContent = "未能载入数据：/api/bus 不可用，外部 bus-data.js 不可达，" +
+        "内嵌快照也解析失败。请重新运行 bus-report build 或 serve。";
+      return;
+    }
+    applyData(picked.data, picked.source);
+  }
+
+  // ── 交互绑定
+  var q = document.getElementById("q");
+  var ot = document.getElementById("onlyThreads");
+
+  function onSearch() { state.search = q.value || ""; applyFilter(); }
+  function onOnly() { state.only = !!ot.checked; applyFilter(); }
+
+  var dc = document.getElementById("descOrder");
+  function onOrder() {
+    state.desc = !!dc.checked;
+    renderThreads();
+    renderTimeline();
+    applyFilter();
+  }
+
+  ["input", "keyup", "search", "change"].forEach(function (ev) {
+    q.addEventListener(ev, onSearch);
+  });
+  ot.addEventListener("change", onOnly);
+  dc.addEventListener("change", onOrder);
+
+  // 值轮询兜底：覆盖粘贴 / IME / 自动化直接赋值 .value 而不派发 input 的情况
+  setInterval(function () {
+    if ((q.value || "") !== state.search) onSearch();
+  }, 250);
+
+  document.getElementById("reload").addEventListener("click", function () {
+    var btn = this;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = "拉取中…";
+    var done = function () { btn.disabled = false; btn.textContent = "刷新数据"; };
+
+    fetch("api/bus?refresh=1", { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        if (!d || !d.messages) throw new Error("数据为空");
+        applyData(d, "live");
+      })
+      // 服务端接口不可用（纯静态托管 / file://）：退回重新注入数据文件
+      .catch(function () {
+        return injectDataScript(true).then(loadSnapshot, loadSnapshot);
+      })
+      .then(done, done);
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
