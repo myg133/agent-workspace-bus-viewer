@@ -1093,6 +1093,8 @@ async function serve(o: Options, aliases: AliasMap): Promise<void> {
   } else if (RUNTIME === "bun") {
     g.Bun.serve({
       port,
+      // 大仓库的 /api/bus?refresh=1 要现拉 bus + 解析上千条消息，会超过默认 10s
+      idleTimeout: 120,
       fetch: async (req: any) => {
         const r = await handler(new URL(req.url));
         return new Response(r.body, { status: r.code, headers: headers(r) });

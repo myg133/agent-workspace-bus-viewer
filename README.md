@@ -340,6 +340,21 @@ git grep -n -E 'gitlab|username|/Users/|C:\\' || echo "干净"
 与提交顺序倒挂（实测占比约 3%，首尾对调会把「最新」排到中间）。
 `meta.range` 同样取真实最早/最晚，而不是数组首尾。
 
+## 在 DSH 里当插件用
+
+这个看板也能挂进 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的
+Web GUI，变成**侧边栏图标 + 独立主面板**（和内置的「Schedules」面板同一种接法）。
+
+```sh
+# 1) 起数据服务（插件只负责显示）
+bun run bus-report.ts serve --remote <git-remote-url> --out ./out --all-generations
+
+# 2) 把 dsh-plugin/ 接进 web profile，然后在 cordis.patch.yml 里 insert 一条
+dsh --profile web --dump-config | grep -A1 bus-viewer   # 验证
+```
+
+细节（slot 映射、两种安装方式、跨盘符坑、回滚）见 [`dsh-plugin/README.md`](dsh-plugin/README.md)。
+
 ## 相关
 
 - [agent-workspace](https://github.com/myg133/agent-workspace) — 流程与规范源头，bus 消息格式以它为准
