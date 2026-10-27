@@ -295,7 +295,7 @@ function parseArgs(argv: string[]): Options {
     limit: null,
     port: 8787,
     interval: 10,
-    ttl: 5,
+    ttl: 60,
     fetch: false,
     quiet: false,
     help: false,
@@ -365,7 +365,7 @@ function usage(): string {
   --limit <n>       最多取 n 条消息
   --port <n>        serve 端口（默认 8787）
   --interval <秒>   watch 轮询间隔（默认 10）
-  --ttl <秒>        /api/bus 缓存秒数（默认 5，0 = 每次刷新都拉）
+  --ttl <秒>        /api/bus 缓存秒数（默认 60，0 = 每次刷新都拉）
   -q, --quiet       精简输出
 
 两种数据来源
@@ -464,19 +464,6 @@ async function ensureBareCache(cacheDir: string, o: Options): Promise<void> {
   if (!o.quiet) console.log(`  · 新建 bare 缓存：${cacheDir}`);
 }
 
-/** 远端有哪些 bus 代：bus + archive/bus-* */
-async function discoverRemoteGenerations(cacheDir: string, remote: string): Promise<string[]> {
-  const r = await run("git", [
-    "-C", cacheDir, "ls-remote", "--heads", remote,
-    "refs/heads/bus", "refs/heads/archive/bus-*",
-  ]);
-  if (r.code !== 0) {
-    throw new Error(`git ls-remote 失败：${r.stderr.trim() || "未知错误"}`);
-  }
-  const names = r.stdout.split("\n").map((l) => l.split("\t")[1]?.trim()).filter(Boolean) as string[];
-  return names.map(refLabel).sort();
-}
-
 /** 本地有哪些 bus 代（优先 remote-tracking）。 */
 async function discoverLocalGenerations(repo: string): Promise<string[]> {
   const r = await run("git", [
@@ -499,23 +486,57 @@ async function discoverLocalGenerations(repo: string): Promise<string[]> {
   return out.sort();
 }
 
-/** 只拉指定的 bus 分支，绝不把业务分支拖下来。 */
+/**
+ * 一次网络往返把需要的 bus 分支全拉下来。
+ *
+ * 远端 SSH 建立连接本身可能就要十几秒（实测某自建 GitLab 约 12s/次），
+ * 所以「先 ls-remote 发现归档代、再 fetch」这种两步走会让每次刷新翻倍。
+ * 这里用通配 refspec 把 bus + archive/bus-* 合并进同一次 fetch，
+ * 发现代改成本地 for-each-ref（0.1s）。
+ */
 async function fetchRefs(
   cacheDir: string,
   remote: string,
   labels: string[],
+  includeArchives: boolean,
   o: Options,
 ): Promise<void> {
-  const spec = labels.map((l) => `+refs/heads/${l}:refs/heads/${l}`);
+  const specs = labels.map((l) => `+refs/heads/${l}:refs/heads/${l}`);
+  if (includeArchives) specs.push("+refs/heads/archive/bus-*:refs/heads/archive/bus-*");
+
   const f = await run("git", [
-    "-C", cacheDir, "fetch", "--no-tags", "--prune", remote, ...spec,
+    "-C", cacheDir, "fetch", "--no-tags", "--prune", remote, ...specs,
   ]);
-  if (f.code !== 0) {
-    throw new Error(
-      `git fetch 失败：${f.stderr.trim() || "未知错误"}\n` +
-      `  远端：${remote}\n  分支：${labels.join(", ")}\n  缓存：${cacheDir}`,
-    );
+  if (f.code === 0) return;
+
+  // 还没有任何归档代时，通配 refspec 可能一条都匹配不上；退成只拉显式分支
+  if (includeArchives) {
+    const only = labels.map((l) => `+refs/heads/${l}:refs/heads/${l}`);
+    const g = await run("git", ["-C", cacheDir, "fetch", "--no-tags", "--prune", remote, ...only]);
+    if (g.code === 0) {
+      if (!o.quiet) console.warn(`  ! 没有可拉的归档代，只拉了 ${labels.join(", ")}`);
+      return;
+    }
   }
+  throw new Error(
+    `git fetch 失败：${f.stderr.trim() || "未知错误"}\n` +
+    `  远端：${remote}\n  分支：${labels.join(", ")}\n  缓存：${cacheDir}`,
+  );
+}
+
+/** 缓存仓库里现存的 bus 代（本地读，不联网）。 */
+async function localGenerations(repo: string): Promise<string[]> {
+  const r = await run("git", [
+    "-C", repo, "for-each-ref", "--format=%(refname:short)",
+    "refs/heads/bus", "refs/heads/archive/bus*",
+  ]);
+  if (r.code !== 0) return [];
+  return r.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(refLabel)
+    .sort();
 }
 
 async function prepareSource(o: Options): Promise<Source> {
@@ -525,11 +546,15 @@ async function prepareSource(o: Options): Promise<Source> {
 
     let labels = o.refs.map(refLabel);
     if (o.allGenerations) {
-      labels = await discoverRemoteGenerations(cacheDir, o.remote);
+      // 一次 fetch 拿全（bus + archive/bus-*），再从本地列代
+      await fetchRefs(cacheDir, o.remote, ["bus"], true, o);
+      labels = await localGenerations(cacheDir);
+    } else {
+      if (labels.length === 0) labels = ["bus"];
+      await fetchRefs(cacheDir, o.remote, labels, false, o);
     }
     if (labels.length === 0) labels = ["bus"];
 
-    await fetchRefs(cacheDir, o.remote, labels, o);
     return {
       repo: cacheDir,
       mode: "remote",
@@ -1131,7 +1156,8 @@ async function watch(o: Options, aliases: AliasMap): Promise<void> {
         await fetchRefs(
           source.repo,
           source.remote,
-          source.refs.map((r) => r.label),
+          ["bus"],
+          true,
           o,
         );
       }

@@ -24,7 +24,12 @@ h1{margin:0 0 6px;font-size:22px;letter-spacing:.3px}
 .sub b{color:var(--fg)}
 .wrap{max-width:1280px;margin:0 auto;padding:0 32px 64px}
 section{margin:34px 0 0}
-h2{font-size:16px;margin:0 0 14px;padding-left:10px;border-left:3px solid var(--acc)}
+h2{font-size:16px;margin:0 0 14px;padding-left:10px;border-left:3px solid var(--acc);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.h2btn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--fg3);
+  border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:400;cursor:pointer;
+  line-height:1.6;letter-spacing:0}
+.h2btn:hover{color:var(--fg);border-color:var(--fg3);background:var(--panel2)}
 h3{font-size:14px;margin:20px 0 10px;color:var(--fg2)}
 .grid{display:grid;gap:12px}
 .g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
@@ -160,8 +165,11 @@ button:hover{background:#2f3644}
     <div class="note" id="s-note"></div>
   </section>
 
-  <section>
-    <h2>待结清 <span id="p-count" style="color:var(--fg3);font-size:12px;font-weight:400"></span></h2>
+  <section id="sec-pending">
+    <h2>待结清 <span id="p-count" style="color:var(--fg3);font-size:12px;font-weight:400"></span>
+      <button id="p-toggle" class="h2btn" type="button" aria-expanded="true"
+              title="收起「待结清」，需要时再展开">收起</button>
+    </h2>
     <div id="pending"></div>
     <div class="note" id="p-note"></div>
   </section>
@@ -225,7 +233,8 @@ button:hover{background:#2f3644}
     });
   }
 
-  var state = { data: null, agentsById: {}, search: "", only: false, desc: true };
+  var state = { data: null, agentsById: {}, search: "", only: false, desc: true,
+                pendingCollapsed: false, pendingOpen: 0 };
 
   // 展示顺序：默认最新在前。按消息时间（at）排序，同一时间保持原提交顺序。
   // 不能直接 reverse 数组：author date 与提交顺序并不总是一致（转述/补发会倒挂）。
@@ -528,6 +537,32 @@ button:hover{background:#2f3644}
         : total + " 个 thread · " + state.data.messages.length + " 条消息";
   }
 
+  var PENDING_KEY = "bus-report.pending-collapsed";
+
+  function readPendingCollapsed() {
+    try { return window.localStorage.getItem(PENDING_KEY) === "1"; } catch (e) { return false; }
+  }
+
+  function writePendingCollapsed(v) {
+    try { window.localStorage.setItem(PENDING_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ }
+  }
+
+  // 「待结清」整栏可收起：收起后保留标题行与计数，展开后照常显示明细。
+  function applyPendingCollapsed() {
+    var body = document.getElementById("pending");
+    var note = document.getElementById("p-note");
+    var btn = document.getElementById("p-toggle");
+    if (!body || !btn) return;
+    var col = !!state.pendingCollapsed;
+    body.style.display = col ? "none" : "";
+    note.style.display = col ? "none" : "";
+    btn.textContent = col
+      ? "展开" + (state.pendingOpen ? " · " + state.pendingOpen : "")
+      : "收起";
+    btn.setAttribute("aria-expanded", col ? "false" : "true");
+    btn.title = col ? "展开「待结清」" : "收起「待结清」，需要时再展开";
+  }
+
   function renderPending() {
     var msgs = state.data.messages || [];
     var withExpect = msgs.filter(function (m) {
@@ -535,6 +570,7 @@ button:hover{background:#2f3644}
     });
     var open = withExpect.filter(function (m) { return !m.settledBy; });
     open.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
+    state.pendingOpen = open.length;
 
     document.getElementById("p-count").textContent = withExpect.length
       ? "（" + open.length + " 未结清 / " + withExpect.length + " 条有反馈义务）"
@@ -547,6 +583,7 @@ button:hover{background:#2f3644}
         "当前数据里没有带 <code>expect</code> 的消息 —— 旧格式（v1）消息没有该字段，" +
         "只有 v2 起才会声明反馈义务。</div>";
       note.textContent = "";
+      applyPendingCollapsed();
       return;
     }
     if (!open.length) {
@@ -577,6 +614,7 @@ button:hover{background:#2f3644}
     note.innerHTML = "判定规则：<code>expect=ack/reply</code> 的消息若被后来消息的 " +
       "<code>re: &lt;id&gt;</code> 引用即视为结清；欠回复会在 aw.py 里挡住 <code>claim next</code> / " +
       "<code>agent exit</code>。";
+    applyPendingCollapsed();
   }
 
   function renderAll() {
@@ -697,6 +735,15 @@ button:hover{background:#2f3644}
   });
   ot.addEventListener("change", onOnly);
   dc.addEventListener("change", onOrder);
+
+  // 「待结清」收起状态：本机记住，刷新后保持
+  var pTog = document.getElementById("p-toggle");
+  state.pendingCollapsed = readPendingCollapsed();
+  pTog.addEventListener("click", function () {
+    state.pendingCollapsed = !state.pendingCollapsed;
+    writePendingCollapsed(state.pendingCollapsed);
+    applyPendingCollapsed();
+  });
 
   // 值轮询兜底：覆盖粘贴 / IME / 自动化直接赋值 .value 而不派发 input 的情况
   setInterval(function () {

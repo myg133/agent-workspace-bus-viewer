@@ -124,6 +124,9 @@ bun run bus-report.ts build --repo <path> --ref bus,archive/bus-20261024 --out .
 这条口径和 `aw.py` 的门禁一致——欠回复会挡住 `claim next` / `agent exit`，
 所以报告里能直接看出「现在谁欠谁一条回复」。
 
+标题右侧的「收起 / 展开 · N」可以把整栏收起来（N 是当前未结清条数）；
+收起状态存在浏览器 localStorage，刷新页面后保持，不影响数据与计数。
+
 ## 不 clone 也能读 bus（`--remote`）
 
 bus 分支的每个 commit 都是**空 commit**（tree 恒为空树 `4b825dc…`），消息只在 commit
@@ -188,7 +191,7 @@ bun run bus-report.ts serve --remote <url> --out ./out   # 实时模式
 bun run bus-report.ts build --repo <repo> --out ./out    # 或只更新快照，再手动刷浏览器
 ```
 
-`--ttl <秒>`（默认 5）控制 `/api/bus` 的服务端缓存窗口，防止连点刷新把远端打爆；
+`--ttl <秒>`（默认 60）控制 `/api/bus` 的服务端缓存窗口，防止连点刷新把远端打爆；
 `?refresh=1` 会绕过缓存。
 
 ## 时间与时区
@@ -240,7 +243,7 @@ git 的 `%aI` 可能是 `Z` 或其它偏移，工具只**改表示、不改时�
 | `--limit <n>` | 最多取 n 条消息 |
 | `--port <n>` | `serve` 端口（默认 8787） |
 | `--interval <秒>` | `watch` 轮询间隔（默认 10） |
-| `--ttl <秒>` | `/api/bus` 服务端缓存秒数（默认 5，`0` = 每次刷新都拉） |
+| `--ttl <秒>` | `/api/bus` 服务端缓存秒数（默认 60，`0` = 每次刷新都拉） |
 | `-q, --quiet` | 精简输出 |
 
 ## Agent 别名映射
