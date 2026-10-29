@@ -85,6 +85,13 @@ tbody tr:hover{background:var(--panel2)}
 .pri-p3{background:rgba(134,142,150,.16);color:#b6bdc8}
 .pri-none{background:#252a35;color:var(--fg3)}
 .mid{color:var(--fg3);font-size:12px;font-family:ui-monospace,Consolas,monospace}
+a.mid{color:var(--fg3);text-decoration:none;border-bottom:1px dotted transparent}
+a.mid:hover{color:var(--acc);border-bottom-color:var(--acc)}
+a.rel{color:var(--fg3);text-decoration:none;border-bottom:1px dotted var(--line)}
+a.rel:hover{color:var(--acc);border-bottom-color:var(--acc)}
+/* 跳转目标高亮：锚点命中时闪一下并保留描边 */
+@keyframes msgFlash{0%{background:rgba(91,157,255,.22)}100%{background:var(--panel)}}
+.msg:target{outline:2px solid var(--acc);outline-offset:2px;animation:msgFlash 1.4s ease-out}
 .time{color:var(--fg3);font-size:12px;margin-left:auto}
 .decl{color:#ffc078;font-size:11px;margin-left:2px;cursor:help}
 /* v2 消息格式：expect / re / result 标签 */
@@ -362,7 +369,9 @@ button:hover{background:#2f3644}
     var href = m.url && m.url.indexOf("http") === 0
       ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.sha.slice(0, 12)) + "</a>"
       : '<span>' + esc(m.sha.slice(0, 12)) + "</span>";
-    return '<div class="msg"' + (compact ? ' style="margin:6px 0"' : "") + '>' +
+    // 时间线里的卡片带锚点，供 id / re 跳转；thread 里的副本不重复占用锚点
+    var anchor = compact && m.id ? ' id="m-' + esc(m.id) + '"' : "";
+    return '<div class="msg"' + anchor + (compact ? ' style="margin:6px 0"' : "") + '>' +
       '<div class="msg-head">' +
       '<span class="idx">#' + i + "</span>" +
       '<span class="t-' + esc(m.type || "unknown") + '">' + esc(t) + "</span>" +
@@ -371,7 +380,10 @@ button:hover{background:#2f3644}
       (multiGen() && m.generation
         ? '<span class="gen" title="所属 bus 代">' + esc(m.generation) + "</span>"
         : "") +
-      '<span class="mid">id ' + esc(m.id) + "</span>" +
+      (m.id
+        ? '<a class="mid" href="#m-' + esc(m.id) + '" title="跳到时间线里的这条消息">id ' +
+          esc(m.id) + "</a>"
+        : '<span class="mid">id —</span>') +
       timeCell(m) +
       "</div>" +
       '<div class="msg-route">' + chip(m.from) +
@@ -387,7 +399,10 @@ button:hover{background:#2f3644}
       (m.thread ? '<div class="ref">thread: ' + esc(m.thread) + "</div>" : "") +
       '<pre class="body">' + esc(body) + "</pre>" +
       '<div class="msg-foot">' + href +
-      (m.re ? '<span class="rel" title="本条回的是哪条消息">↩ re ' + esc(m.re) + "</span>" : "") +
+      (m.re
+        ? '<a class="rel" href="#m-' + esc(m.re) + '" title="跳到被回复的那条消息">↩ re ' +
+          esc(m.re) + "</a>"
+        : "") +
       (m.result
         ? '<span class="' + (m.result === "ok" ? "res-ok" : "res-no") + '">result ' +
           esc(m.result) + "</span>"
@@ -619,7 +634,8 @@ button:hover{background:#2f3644}
           esc(TYPE_CN[m.type] || m.type) + "</span>" +
           '<span class="pri pri-' + esc(m.priority || "none") + '">' +
           esc(PRI_CN[m.priority] || m.priority || "—") + "</span>" +
-          '<span class="mid">id ' + esc(m.id) + "</span>" +
+          '<a class="mid" href="#m-' + esc(m.id) + '" title="跳到时间线里的这条消息">id ' +
+          esc(m.id) + "</a>" +
           '<span class="time">' + esc(fmtTime(m.at)) + "</span></div>" +
           '<div class="msg-route">' + chip(m.from) + '<span class="arrow">&rarr;</span>' +
           (m.to && m.to.length ? m.to.map(chip).join("") : '<span class="chip none">广播</span>') +
