@@ -54,6 +54,20 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+/** 文件 mtime（毫秒）；不存在返回 0。 */
+async function mtimeMs(path: string): Promise<number> {
+  try {
+    if (RUNTIME === "deno") {
+      const st = await g.Deno.stat(path);
+      return st.mtime?.getTime?.() ?? 0;
+    }
+    const { stat } = await import("node:fs/promises");
+    return (await stat(path)).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
 /** 确保目录存在（递归创建）。 */
 async function ensureDir(path: string): Promise<void> {
   if (await exists(path)) return;
@@ -1022,9 +1036,17 @@ async function serve(o: Options, aliases: AliasMap): Promise<void> {
     ".css": "text/css; charset=utf-8",
   };
 
-  // 首次启动：没有页面就先建一份（同时把 bus-data.js 快照写好作为兜底）
-  if (!(await exists(`${dir}/${o.html}`))) {
+  // 首次启动或模板比页面新时重建：serve 只吐磁盘上的文件，代码 pull 下来
+  // 但 out/ 里的 HTML 还是旧的，就会出现「服务在跑、页面却是旧版」。
+  const htmlPath = `${dir}/${o.html}`;
+  const tplPath = o.template ?? "./viewer.template.html";
+  const tplTime = await mtimeMs(tplPath);
+  const htmlTime = await mtimeMs(htmlPath);
+  if (htmlTime === 0) {
     if (!o.quiet) console.log("  · 首次启动，先构建页面…");
+    await build(o, aliases);
+  } else if (tplTime > htmlTime) {
+    if (!o.quiet) console.log("  · 模板比页面新，先重建页面…");
     await build(o, aliases);
   }
 
