@@ -92,6 +92,8 @@ tbody tr:hover{background:var(--panel2)}
   background:#252a35;color:var(--fg2);white-space:nowrap}
 .exp-open{border-color:#6b4a2f;background:#322616;color:#ffc078}
 .exp-done{border-color:#2f6b4a;background:#16321f;color:#8ce99a}
+.exp-x{margin-left:6px;padding:0 4px;border-radius:3px;font-size:10px;
+  background:rgba(255,255,255,.1);color:inherit;opacity:.85}
 .rel{font-size:11.5px;color:var(--fg3);font-family:ui-monospace,Consolas,monospace}
 .gen{font-size:11px;color:var(--fg3);border:1px dashed var(--line);border-radius:5px;
   padding:0 6px;white-space:nowrap}
@@ -318,17 +320,34 @@ button:hover{background:#2f3644}
     return '<span class="chip' + known + '" title="' + esc(id) + '">' + esc(label) + "</span>";
   }
 
+  // 各 type 的默认反馈义务（与 aw.py EXPECT_DEFAULT 一致）。
+  // expect 可以被发送方显式覆盖：fyi + expect=ack 这种「知会但要求回执」是合法写法，
+  // 只是和类型默认不一致，页面要标出来，否则看着像报告算错了。
+  var EXPECT_DEFAULT = {
+    fyi: "none", decision: "none", "contract-ack": "none",
+    question: "reply", blocker: "reply", handoff: "reply", "contract-change": "ack"
+  };
+
+  function expectIsExplicit(m) {
+    var def = EXPECT_DEFAULT[m.type] || "none";
+    return !!(m.expect && m.expect !== "none" && m.expect !== def);
+  }
+
   // v2：反馈义务标签。已结清（有人用 re: <id> 回过）为绿色，未结清为橙色。
   function expChip(m) {
     if (!m.expect || m.expect === "none") return "";
     var done = !!m.settledBy;
-    var title = done
-      ? "已由消息 " + m.settledBy + " 结清"
-      : "尚无 re 回执";
+    var explicit = expectIsExplicit(m);
+    var title = done ? "已由消息 " + m.settledBy + " 结清" : "尚无 re 回执";
     if (m.reply_by) title += "；期望回复：" + m.reply_by;
+    if (explicit) {
+      title += "；该类型默认 expect=" + (EXPECT_DEFAULT[m.type] || "none") +
+        "，本条由发送方显式要求 " + m.expect;
+    }
     return '<span class="exp ' + (done ? "exp-done" : "exp-open") + '" title="' +
       esc(title) + '">' + esc(EXPECT_CN[m.expect] || m.expect) +
-      (done ? " ✓" : " ⏳") + "</span>";
+      (done ? " ✓" : " ⏳") +
+      (explicit ? '<span class="exp-x">显式</span>' : "") + "</span>";
   }
 
   function multiGen() {
@@ -571,9 +590,11 @@ button:hover{background:#2f3644}
     var open = withExpect.filter(function (m) { return !m.settledBy; });
     open.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
     state.pendingOpen = open.length;
+    var openExplicit = open.filter(expectIsExplicit).length;
 
     document.getElementById("p-count").textContent = withExpect.length
-      ? "（" + open.length + " 未结清 / " + withExpect.length + " 条有反馈义务）"
+      ? "（" + open.length + " 未结清 / " + withExpect.length + " 条有反馈义务" +
+        (openExplicit ? "，其中 " + openExplicit + " 条是发送方显式要求" : "") + "）"
       : "";
 
     var el = document.getElementById("pending");
@@ -593,7 +614,7 @@ button:hover{background:#2f3644}
       el.innerHTML = open.map(function (m) {
         return '<div class="card" style="margin:8px 0;border-color:#6b4a2f">' +
           '<div class="msg-head">' +
-          '<span class="exp exp-open">' + esc(EXPECT_CN[m.expect] || m.expect) + " ⏳</span>" +
+          expChip(m) +
           '<span class="t-' + esc(m.type || "unknown") + '">' +
           esc(TYPE_CN[m.type] || m.type) + "</span>" +
           '<span class="pri pri-' + esc(m.priority || "none") + '">' +
@@ -613,7 +634,11 @@ button:hover{background:#2f3644}
     }
     note.innerHTML = "判定规则：<code>expect=ack/reply</code> 的消息若被后来消息的 " +
       "<code>re: &lt;id&gt;</code> 引用即视为结清；欠回复会在 aw.py 里挡住 <code>claim next</code> / " +
-      "<code>agent exit</code>。";
+      "<code>agent exit</code>。<br>" +
+      "标 <span class=\"exp exp-done\" style=\"font-size:11px\">显式</span> 的是" +
+      "<b>发送方覆盖了类型默认值</b>——例如 <code>fyi</code> 默认 <code>expect=none</code>，" +
+      "但发送时用了 <code>--expect ack</code>，于是它也会进待结清。" +
+      "若认为某些知会不该要求回执，应改发送端，而不是把这类消息从列表里过滤掉。";
     applyPendingCollapsed();
   }
 

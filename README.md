@@ -125,6 +125,8 @@ bun run bus-report.ts build --repo <path> --ref bus,archive/bus-20261024 --out .
 所以报告里能直接看出「现在谁欠谁一条回复」。
 
 标题右侧的「收起 / 展开 · N」可以把整栏收起来（N 是当前未结清条数）；
+带 `显式` 标记的是**发送方覆盖了类型默认值**的消息（如 `fyi` 默认 `expect=none`，
+但发送时用了 `--expect ack`）——它们同样进待结清，因为发送方确实要求了回执；
 收起状态存在浏览器 localStorage，刷新页面后保持，不影响数据与计数。
 
 ## 不 clone 也能读 bus（`--remote`）
