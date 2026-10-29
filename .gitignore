@@ -18,3 +18,7 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# ── 内部审计（含真实 agent id / 内部路径，不进公开仓库） ──────
+audit/
+
