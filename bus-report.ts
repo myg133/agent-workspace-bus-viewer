@@ -1009,6 +1009,8 @@ interface Reply {
   type: string;
   code: number;
   noStore?: boolean;
+  /** 每次都要回源校验（产物会随 build 变化） */
+  noCache?: boolean;
 }
 
 async function serve(o: Options, aliases: AliasMap): Promise<void> {
@@ -1091,6 +1093,9 @@ async function serve(o: Options, aliases: AliasMap): Promise<void> {
       body: await readText(full),
       type: mime[ext] ?? "text/plain; charset=utf-8",
       code: 200,
+      // 产物每次 build 都会重写；不设 no-cache 的话浏览器会拿旧页面当缓存，
+      // 改了模板却「刷新看不到更新」。
+      noCache: ext === ".html" || ext === ".js" || ext === ".json",
     };
   };
 
@@ -1106,6 +1111,7 @@ async function serve(o: Options, aliases: AliasMap): Promise<void> {
       "access-control-allow-origin": "*",
     };
     if (r.noStore) h["cache-control"] = "no-store";
+    else if (r.noCache) h["cache-control"] = "no-cache, must-revalidate";
     return h;
   };
 

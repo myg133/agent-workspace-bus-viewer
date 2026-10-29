@@ -85,9 +85,12 @@ tbody tr:hover{background:var(--panel2)}
 .pri-p3{background:rgba(134,142,150,.16);color:#b6bdc8}
 .pri-none{background:#252a35;color:var(--fg3)}
 .mid{color:var(--fg3);font-size:12px;font-family:ui-monospace,Consolas,monospace}
-a.mid{color:var(--fg3);text-decoration:none;border-bottom:1px dotted transparent}
+a.mid{color:var(--fg3);text-decoration:none;border-bottom:1px dotted var(--line);cursor:pointer}
 a.mid:hover{color:var(--acc);border-bottom-color:var(--acc)}
-a.rel{color:var(--fg3);text-decoration:none;border-bottom:1px dotted var(--line)}
+/* 待结清里的 id 是明确的跳转入口，用强调色标出来 */
+a.mid-jump{color:var(--acc);border-bottom:1px dashed var(--acc);font-weight:500}
+a.mid-jump:hover{color:#a5c8ff}
+a.rel{color:var(--fg3);text-decoration:none;border-bottom:1px dotted var(--line);cursor:pointer}
 a.rel:hover{color:var(--acc);border-bottom-color:var(--acc)}
 /* 跳转目标高亮：锚点命中时闪一下并保留描边 */
 @keyframes msgFlash{0%{background:rgba(91,157,255,.22)}100%{background:var(--panel)}}
@@ -634,8 +637,8 @@ button:hover{background:#2f3644}
           esc(TYPE_CN[m.type] || m.type) + "</span>" +
           '<span class="pri pri-' + esc(m.priority || "none") + '">' +
           esc(PRI_CN[m.priority] || m.priority || "—") + "</span>" +
-          '<a class="mid" href="#m-' + esc(m.id) + '" title="跳到时间线里的这条消息">id ' +
-          esc(m.id) + "</a>" +
+          '<a class="mid mid-jump" href="#m-' + esc(m.id) +
+          '" title="跳到时间线里的这条消息">id ' + esc(m.id) + " ↗</a>" +
           '<span class="time">' + esc(fmtTime(m.at)) + "</span></div>" +
           '<div class="msg-route">' + chip(m.from) + '<span class="arrow">&rarr;</span>' +
           (m.to && m.to.length ? m.to.map(chip).join("") : '<span class="chip none">广播</span>') +
