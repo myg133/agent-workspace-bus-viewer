@@ -94,7 +94,8 @@ a.rel{color:var(--fg3);text-decoration:none;border-bottom:1px dotted var(--line)
 a.rel:hover{color:var(--acc);border-bottom-color:var(--acc)}
 /* 跳转目标高亮：锚点命中时闪一下并保留描边 */
 @keyframes msgFlash{0%{background:rgba(91,157,255,.22)}100%{background:var(--panel)}}
-.msg:target{outline:2px solid var(--acc);outline-offset:2px;animation:msgFlash 1.4s ease-out}
+.msg{scroll-margin-top:16px}
+.msg:target,.msg.jump-flash{outline:2px solid var(--acc);outline-offset:2px;animation:msgFlash 1.4s ease-out}
 .time{color:var(--fg3);font-size:12px;margin-left:auto}
 .decl{color:#ffc078;font-size:11px;margin-left:2px;cursor:help}
 /* v2 消息格式：expect / re / result 标签 */
@@ -717,7 +718,66 @@ button:hover{background:#2f3644}
     renderThreads();
     renderTimeline();
     applyFilter();
+
+    // 直接带 #m-xxx 打开时，锚点元素在渲染前并不存在，浏览器不会重试——
+    // 这里补一次定位，纯浏览器（file:// / 静态托管）也能跳。
+    if (location.hash && location.hash.indexOf("#m-") === 0) {
+      setTimeout(function () { jumpToHash(location.hash, false); }, 30);
+    }
   }
+
+  // ── 锚点跳转（不依赖浏览器原生的 #hash 时序）
+  function targetOfHash(hash) {
+    if (!hash || String(hash).indexOf("#m-") !== 0) return null;
+    return document.getElementById(String(hash).slice(1));
+  }
+
+  // 目标可能被搜索过滤藏起来了，跳之前先清掉过滤，否则滚到的是隐藏元素
+  function revealTarget(el) {
+    if (!el.classList.contains("hidden")) return;
+    var q = document.getElementById("q");
+    if (q && q.value) { q.value = ""; state.search = ""; }
+    var ot = document.getElementById("onlyThreads");
+    if (ot && ot.checked) { ot.checked = false; state.only = false; }
+    applyFilter();
+  }
+
+  function jumpToHash(hash, smooth) {
+    var el = targetOfHash(hash);
+    if (!el) return false;
+    revealTarget(el);
+    el.classList.add("jump-flash");
+    setTimeout(function () { el.classList.remove("jump-flash"); }, 1800);
+    var top = el.getBoundingClientRect().top + (window.pageYOffset || 0) - 12;
+    // 距离很远时用瞬时跳转：几千条消息里平滑滚动要好几秒，反而像没反应
+    var far = Math.abs(top - (window.pageYOffset || 0)) > 3000;
+    try {
+      window.scrollTo({ top: top, behavior: smooth && !far ? "smooth" : "auto" });
+    } catch (e) {
+      window.scrollTo(0, top); // 老浏览器不支持 options 对象
+    }
+    return true;
+  }
+
+  // 捕获阶段拦下所有 #m- 链接：清过滤 + 定位 + 高亮 + 可分享的 hash
+  document.addEventListener("click", function (ev) {
+    var node = ev.target;
+    while (node && node !== document) {
+      if (node.tagName === "A") {
+        var href = node.getAttribute ? node.getAttribute("href") || "" : "";
+        if (href.indexOf("#m-") === 0) {
+          ev.preventDefault();
+          if (location.hash !== href) {
+            if (window.history && history.replaceState) history.replaceState(null, "", href);
+            else location.hash = href;
+          }
+          jumpToHash(href, true);
+          return;
+        }
+      }
+      node = node.parentNode;
+    }
+  }, true);
 
   // 按需注入同目录数据文件（file:// / 纯静态托管时的数据来源）
   function injectDataScript(bust) {
