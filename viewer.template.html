@@ -694,14 +694,22 @@ button:hover{background:#2f3644}
 
     var badge = document.getElementById("src-badge");
     var live = state.source === "live";
+    var builtAt = Date.parse(d.meta.generatedAt);
+    var ageHours = Number.isNaN(builtAt) ? 0 : (Date.now() - builtAt) / 3600000;
     badge.textContent = "数据源：" + (live
       ? "实时（服务端 fetch " + (d.meta.remote || d.meta.ref) + "）"
       : state.source === "external"
         ? "外部 " + d.meta.dataFile + "（已是最新）"
-        : "内嵌快照（外部文件未加载）");
-    badge.className = "badge " + (live || state.source === "external" ? "live" : "stale");
+        : "内嵌快照（外部文件未加载）") +
+      // 非实时 + 快照较旧 → 明确告诉用户这是旧页面，别再怀疑功能没生效
+      (!live && ageHours >= 0.5 ? " · 快照 " + (ageHours >= 24
+        ? Math.round(ageHours / 24) + " 天前"
+        : Math.round(ageHours) + " 小时前") : "");
+    badge.className = "badge " +
+      (live ? "live" : ageHours >= 0.5 ? "stale" : state.source === "external" ? "live" : "stale");
     document.getElementById("gen-badge").textContent =
-      "生成时间：" + fmtTime(d.meta.generatedAt).slice(0, 19) + "（北京时间）";
+      "生成时间：" + fmtTime(d.meta.generatedAt).slice(0, 19) + "（北京时间）" +
+      (!live && ageHours >= 0.5 ? " · 点「刷新数据」或重开面板取最新" : "");
 
     renderAgents();
     renderStats();

@@ -80,7 +80,8 @@ window.__ModuleLoader__.load({
 		function BusViewerPanel() {
 			const [url, setUrl] = react.useState(readUrl);
 			const [draft, setDraft] = react.useState(readUrl);
-			const [nonce, setNonce] = react.useState(0);
+			// nonce 从当前时间起算：每次挂载都带一个新 query，避免 iframe 命中旧缓存
+			const [nonce, setNonce] = react.useState(() => Date.now());
 			const [state, setState] = react.useState("probing");
 
 			// 探活：no-cors 下只有网络层失败才会 reject —— 正好区分「服务没起」
@@ -111,7 +112,7 @@ window.__ModuleLoader__.load({
 				[apply]
 			);
 
-			const src = nonce ? url + (url.indexOf("?") >= 0 ? "&" : "?") + "_r=" + nonce : url;
+			const src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_r=" + nonce;
 
 			return jsx.jsx("div", {
 				className: "dsh-busv",
