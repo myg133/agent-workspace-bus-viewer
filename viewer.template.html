@@ -149,11 +149,127 @@ button{background:#252a35;border:1px solid var(--line);color:var(--fg);
 button:hover{background:#2f3644}
 #err{display:none;background:rgba(224,49,49,.12);border:1px solid #6b2b2b;
   color:#ff8787;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px}
+#back-to-top{position:fixed;right:24px;bottom:24px;z-index:20;width:48px;height:48px;
+  display:grid;place-items:center;padding:0;border:1px solid #3a4658;border-radius:50%;
+  background:#202938;color:var(--fg);box-shadow:0 6px 20px rgba(0,0,0,.35);
+  opacity:0;visibility:hidden;transform:translateY(8px);
+  transition:opacity .18s ease,transform .18s ease,visibility .18s}
+#back-to-top.visible{opacity:1;visibility:visible;transform:translateY(0)}
+#back-to-top:hover{background:#2a3b54;border-color:var(--acc)}
+#back-to-top:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+@media(max-width:600px){#back-to-top{right:16px;bottom:16px;width:46px;height:46px}}
+@media(prefers-reduced-motion:reduce){#back-to-top{transition:none}}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+#open-chat{display:inline-flex;align-items:center;gap:8px;min-height:40px;border-color:#35517a;
+  background:#1d2a3d;color:#bcd4ff}
+#open-chat:hover{background:#263a56}
+#chat-view{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  margin:0;background:var(--bg)}
+body.chat-open{overflow:hidden}
+body.chat-open #back-to-top{display:none}
+.chat-top{flex:none;padding:14px 24px 12px;border-bottom:1px solid var(--line);
+  background:#151922;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.chat-topline{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:14px}
+#close-chat{min-width:40px;min-height:40px;padding:0;font-size:20px}
+.chat-heading{min-width:0;flex:1}
+.chat-heading h2{margin:0;padding:0;border:0;font-size:17px}
+.chat-heading p{margin:2px 0 0;color:var(--fg3);font-size:12px}
+#chat-count{color:var(--fg2);font-variant-numeric:tabular-nums;font-size:12px}
+.chat-participants{max-width:1120px;margin:12px auto 0;display:flex;gap:8px;overflow-x:auto;
+  padding:2px 1px 6px;scrollbar-width:thin}
+.chat-agent{flex:none;min-height:38px;padding:6px 12px;border-radius:20px;color:var(--fg2);
+  background:#1b202a;border-color:#303744}
+.chat-agent.active{color:#e7f0ff;border-color:#4a76b7;background:#243b5c}
+.chat-tools{max-width:1120px;margin:8px auto 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#chat-search{max-width:420px;min-width:160px;flex:1}
+#chat-selection{font-size:12px;color:var(--fg3);margin-left:auto}
+#chat-refresh-status{font-size:11px;color:var(--fg3)}
+#chat-reload{min-height:36px;padding:5px 10px}
+#chat-scroll{position:relative;flex:1;overflow:auto;overscroll-behavior:contain;padding:20px 24px 28px}
+.chat-bottom{flex:none;border-top:1px solid var(--line);background:#151922;padding:10px 24px calc(10px + env(safe-area-inset-bottom))}
+.chat-bottom-inner{max-width:920px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#chat-bottom-hint{color:var(--fg3);font-size:11px}
+#chat-latest{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;
+  padding:7px 16px;border:1px solid #416993;border-radius:999px;background:#203754;color:#d5e7ff;
+  box-shadow:0 4px 14px rgba(0,0,0,.24);font-size:12px;font-weight:650}
+#chat-latest:hover{background:#29486b;border-color:#6ca9ef}
+#chat-latest.at-latest{background:#1b242e;border-color:#343e4c;color:#9ca8b8;box-shadow:none}
+#chat-latest.has-new{border-color:#4f9d78;background:#1d4938;color:#d8ffea}
+#chat-latest svg{flex:none}
+.chat-agent{display:inline-flex;align-items:center;gap:7px}
+.chat-agent-avatar{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;
+  background:hsl(var(--agent-hue) 38% 27%);color:hsl(var(--agent-hue) 75% 85%);font-size:10px;font-weight:700}
+.chat-agent-count{color:var(--fg3);font-size:10px}
+.chat-agent.active .chat-agent-count{color:#a7c8f3}
+.chat-meta .chat-agent-name{display:inline-flex;align-items:baseline;gap:6px;padding:0;border:0;
+  background:transparent;color:var(--fg);font:inherit;font-size:13px;font-weight:700;text-align:left}
+.chat-meta .chat-agent-name[data-chat-agent]{cursor:pointer}
+.chat-meta .chat-agent-name[data-chat-agent]:hover .chat-agent-label{color:var(--acc)}
+.chat-agent-id{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--fg3);font:10px ui-monospace,Consolas,monospace}
+.chat-meta time{color:var(--fg3)}
+.chat-type{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;white-space:nowrap}
+.chat-type-icon{font-size:11px;line-height:1}
+#chat-messages{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.chat-empty{margin:auto;color:var(--fg3);padding:48px 16px;text-align:center}
+.chat-row{display:flex;align-items:flex-end;gap:9px;max-width:min(78%,760px)}
+.chat-row.mine{align-self:flex-end;flex-direction:row-reverse}
+.chat-avatar{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;
+  background:hsl(var(--agent-hue) 38% 27%);color:hsl(var(--agent-hue) 75% 85%);
+  font-size:12px;font-weight:700}
+.chat-content{min-width:0}
+.chat-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:0 4px 4px;color:var(--fg3);font-size:11px}
+.chat-row.mine .chat-meta{justify-content:flex-end}
+.chat-bubble{padding:10px 13px;border:1px solid var(--line);border-radius:14px 14px 14px 4px;
+  background:#1b202a;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.chat-row.mine .chat-bubble{border-color:#31517a;border-radius:14px 14px 4px 14px;background:#1c2c42}
+.chat-bubble .body{margin:0;padding:0;border:0;background:transparent;color:var(--fg);
+  font:inherit;font-size:13px;line-height:1.7;white-space:normal;overflow-wrap:anywhere}
+.markdown-body> :first-child{margin-top:0}
+.markdown-body> :last-child{margin-bottom:0}
+.markdown-body p{margin:0 0 9px}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{display:block;margin:16px 0 8px;padding:0;border:0;
+  color:#f0f4fc;line-height:1.35;letter-spacing:0}
+.markdown-body h1{font-size:19px}.markdown-body h2{font-size:17px}.markdown-body h3{font-size:15px}.markdown-body h4{font-size:14px}
+.markdown-body strong{color:#fff;font-weight:700}
+.markdown-body em{color:#d8e4f5}
+.markdown-body a{color:#8dbdff;text-decoration:underline;text-decoration-color:#52729d;text-underline-offset:2px}
+.markdown-body ul,.markdown-body ol{margin:5px 0 10px;padding-left:23px}
+.markdown-body li{padding-left:2px;margin:3px 0}
+.markdown-body blockquote{margin:9px 0;padding:7px 12px;border-left:3px solid #577da9;
+  border-radius:0 6px 6px 0;background:rgba(91,157,255,.08);color:#bdc9da}
+.markdown-body blockquote p{margin:0}
+.markdown-body hr{height:1px;margin:12px 0;border:0;background:var(--line)}
+.markdown-table-wrap{max-width:100%;margin:10px 0;overflow-x:auto;border:1px solid var(--line);border-radius:7px}
+.markdown-body table{width:100%;border-collapse:collapse;font-size:12px}
+.markdown-body th,.markdown-body td{min-width:90px;padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+.markdown-body th{background:#202631;color:#c8d4e6;font-size:11px;text-transform:none;letter-spacing:0}
+.markdown-body tr:last-child td{border-bottom:0}
+.markdown-body code{padding:1px 5px;border:1px solid #343b49;border-radius:5px;background:#12161d;
+  color:#c4dcff;font:12px/1.55 ui-monospace,Consolas,monospace}
+.markdown-body pre{margin:9px 0;padding:11px 12px;overflow:auto;border:1px solid #303746;border-radius:8px;
+  background:#11151c;color:#d4deed;line-height:1.6}
+.markdown-body pre code{padding:0;border:0;background:none;color:inherit;white-space:pre;font-size:11.5px}
+.chat-details{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;color:var(--fg3);font-size:10.5px}
+.chat-details a{color:var(--fg3)}
+@media(max-width:700px){
+  .chat-top{padding:10px 12px 8px}.chat-scroll{padding:16px 12px 24px}
+  .chat-row{max-width:92%}.chat-tools{gap:8px}.chat-heading p{font-size:11px}
+  .chat-scroll{padding:16px 12px 24px}.chat-bottom{padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+  #chat-bottom-hint{display:none}.chat-bottom-inner{justify-content:center}
+  #chat-latest{width:min(100%,360px)}#chat-count{display:none}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>BA Bus 沟通梳理</h1>
+  <div class="header-top">
+    <h1>BA Bus 沟通梳理</h1>
+    <button id="open-chat" type="button" aria-haspopup="dialog">
+      <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg>
+      聊天窗口
+    </button>
+  </div>
   <div class="sub">
     <span id="hd-meta">加载中…</span>
   </div>
@@ -223,6 +339,41 @@ button:hover{background:#2f3644}
   </section>
 </div>
 
+<section id="chat-view" class="hidden" role="dialog" aria-modal="true" aria-label="Agent 聊天窗口">
+  <div class="chat-top">
+    <div class="chat-topline">
+      <button id="close-chat" type="button" aria-label="返回看板" title="返回看板">←</button>
+      <div class="chat-heading"><h2>Agent 聊天</h2><p>选择参与者，查看与其相关的全部消息</p></div>
+      <span id="chat-count"></span>
+    </div>
+    <div id="chat-participants" class="chat-participants" role="group" aria-label="筛选参与者"></div>
+    <div class="chat-tools">
+      <input id="chat-search" type="search" placeholder="搜索聊天内容…" aria-label="搜索聊天内容">
+      <button id="chat-reload" type="button" title="重新拉取 bus 消息">刷新消息</button>
+      <span id="chat-refresh-status" role="status" aria-live="polite"></span>
+      <span id="chat-selection">当前：全部消息</span>
+    </div>
+  </div>
+  <div id="chat-scroll" class="chat-scroll" tabindex="0" aria-label="聊天消息记录">
+    <div id="chat-messages"></div>
+  </div>
+  <div class="chat-bottom">
+    <div class="chat-bottom-inner">
+      <span id="chat-bottom-hint">已显示最新消息</span>
+      <button id="chat-latest" type="button" aria-label="跳到最新消息" title="跳转到最新消息">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+        <span id="chat-latest-label">已到最新</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<button id="back-to-top" type="button" aria-label="回到页面顶部" title="回到顶部" aria-hidden="true">
+  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>
+  </svg>
+</button>
+
 <!-- 数据文件名：外部数据按需注入（实时模式不下载快照，避免双份传输） -->
 <script>window.__BUS_DATA_FILE__ = "{{DATA_FILE}}";</script>
 <!-- 内嵌快照：所有外部数据都拿不到时的兜底 -->
@@ -237,6 +388,17 @@ button:hover{background:#2f3644}
     "contract-change": "契约变更", "decision-request": "裁决请求",
     registration: "注册", offer: "接单意向", unknown: "未分类"
   };
+  var TYPE_CLASS = {
+    decision: "t-decision", handoff: "t-handoff", fyi: "t-fyi", question: "t-question",
+    blocker: "t-blocker", status: "t-status", "contract-ack": "t-contract-ack",
+    "contract-change": "t-contract-change", "decision-request": "t-decision-request",
+    registration: "t-registration", offer: "t-offer", unknown: "t-unknown"
+  };
+  var TYPE_ICON = {
+    decision: "◆", handoff: "↗", fyi: "i", question: "?", blocker: "!",
+    status: "●", "contract-ack": "✓", "contract-change": "Δ",
+    "decision-request": "⚖", registration: "+", offer: "↗", unknown: "·"
+  };
   var PRI_CN = { p0: "P0 最高", p1: "P1", p2: "P2", p3: "P3", "": "—" };
   var EXPECT_CN = { none: "无需回复", ack: "需回执", reply: "需回复", "": "—" };
 
@@ -246,8 +408,119 @@ button:hover{background:#2f3644}
     });
   }
 
+  function renderMarkdown(source) {
+    var inline = function (value) {
+      var codes = [];
+      var text = esc(value).replace(/`([^`\n]+)`/g, function (_, code) {
+        var key = "\u0000CODE" + codes.length + "\u0000";
+        codes.push("<code>" + code + "</code>");
+        return key;
+      });
+      text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (all, label, url) {
+        if (!/^(https?:\/\/|mailto:)/i.test(url)) return label;
+        var key = "\u0000LINK" + codes.length + "\u0000";
+        codes.push('<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + '</a>');
+        return key;
+      });
+      text = text.replace(/\*\*(.+?)\*\*|__(.+?)__/g, function (_, a, b) { return "<strong>" + (a || b) + "</strong>"; });
+      text = text.replace(/~~(.+?)~~/g, "<del>$1</del>");
+      text = text.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+      text = text.replace(/\n/g, "<br>");
+      return text.replace(/\u0000(?:CODE|LINK)(\d+)\u0000/g, function (_, index) { return codes[Number(index)]; });
+    };
+    var lines = String(source == null ? "" : source).replace(/\r\n?/g, "\n").split("\n");
+    var out = [], paragraph = [], list = "", quote = [], code = null, consumedTableLines = {};
+    function flushParagraph() {
+      if (paragraph.length) out.push("<p>" + inline(paragraph.join("\n")) + "</p>");
+      paragraph = [];
+    }
+    function closeList() {
+      if (list) out.push("</" + list + ">");
+      list = "";
+    }
+    function flushQuote() {
+      if (quote.length) out.push("<blockquote><p>" + inline(quote.join("\n")) + "</p></blockquote>");
+      quote = [];
+    }
+    function tableCells(row) {
+      return row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (cell) {
+        return cell.trim();
+      });
+    }
+    var tableSeparator = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/;
+    lines.forEach(function (line, lineIndex) {
+      if (code) {
+        if (/^\s*```/.test(line)) {
+          var languageClass = code.language ? ' class="language-' + esc(code.language) + '"' : "";
+          out.push("<pre><code" + languageClass + ">" + esc(code.lines.join("\n")) + "</code></pre>");
+          code = null;
+        } else code.lines.push(line);
+        return;
+      }
+      if (consumedTableLines[lineIndex]) return;
+      var fence = line.match(/^\s*```([\w+-]*)\s*$/);
+      if (fence) {
+        flushParagraph(); closeList(); flushQuote();
+        code = { language: fence[1], lines: [] };
+        return;
+      }
+      if (line.indexOf("|") >= 0 && lines[lineIndex + 1] && tableSeparator.test(lines[lineIndex + 1])) {
+        flushParagraph(); closeList(); flushQuote();
+        var headers = tableCells(line);
+        var tableHtml = '<div class="markdown-table-wrap"><table><thead><tr>' +
+          headers.map(function (cell) { return "<th>" + inline(cell) + "</th>"; }).join("") +
+          "</tr></thead><tbody>";
+        var rowIndex = lineIndex + 2;
+        consumedTableLines[lineIndex] = true;
+        consumedTableLines[lineIndex + 1] = true;
+        while (rowIndex < lines.length && lines[rowIndex].indexOf("|") >= 0 && lines[rowIndex].trim()) {
+          consumedTableLines[rowIndex] = true;
+          var cells = tableCells(lines[rowIndex]);
+          while (cells.length < headers.length) cells.push("");
+          tableHtml += "<tr>" + headers.map(function (_, cellIndex) {
+            return "<td>" + inline(cells[cellIndex] || "") + "</td>";
+          }).join("") + "</tr>";
+          rowIndex++;
+        }
+        out.push(tableHtml + "</tbody></table></div>");
+        lineIndex = rowIndex - 1;
+        return;
+      }
+      var heading = line.match(/^\s*(#{1,6})\s+(.+?)\s*#*\s*$/);
+      var unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+      var ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+      var quoteLine = line.match(/^\s*>\s?(.*)$/);
+      if (heading) {
+        flushParagraph(); closeList(); flushQuote();
+        var level = heading[1].length;
+        out.push("<h" + level + ">" + inline(heading[2]) + "</h" + level + ">");
+      } else if (/^\s*(---+|\*\*\*+)\s*$/.test(line)) {
+        flushParagraph(); closeList(); flushQuote(); out.push("<hr>");
+      } else if (quoteLine) {
+        flushParagraph(); closeList(); quote.push(quoteLine[1]);
+      } else if (unordered || ordered) {
+        flushParagraph(); flushQuote();
+        var nextList = unordered ? "ul" : "ol";
+        if (list && list !== nextList) closeList();
+        if (!list) { list = nextList; out.push("<" + list + ">"); }
+        out.push("<li>" + inline((unordered || ordered)[1]) + "</li>");
+      } else if (!line.trim()) {
+        flushParagraph(); closeList(); flushQuote();
+      } else {
+        closeList(); flushQuote(); paragraph.push(line);
+      }
+    });
+    if (code) {
+      var finalLanguage = code.language ? ' class="language-' + esc(code.language) + '"' : "";
+      out.push("<pre><code" + finalLanguage + ">" + esc(code.lines.join("\n")) + "</code></pre>");
+    }
+    flushParagraph(); closeList(); flushQuote();
+    return out.join("");
+  }
+
   var state = { data: null, agentsById: {}, search: "", only: false, desc: true,
-                pendingCollapsed: false, pendingOpen: 0 };
+                pendingCollapsed: false, pendingOpen: 0, chatAgent: "", chatSearch: "",
+                chatHasNew: false, refreshing: false };
 
   // 展示顺序：默认最新在前。按消息时间（at）排序，同一时间保持原提交顺序。
   // 不能直接 reverse 数组：author date 与提交顺序并不总是一致（转述/补发会倒挂）。
@@ -545,6 +818,124 @@ button:hover{background:#2f3644}
     document.getElementById("timeline").innerHTML = html + "</div>";
   }
 
+  function messageInvolvesAgent(m, agentId) {
+    if (!agentId) return true;
+    if (m.from === agentId) return true;
+    if (!m.to || !m.to.length) return true; // 空收件人按广播/未指定收件人处理
+    var recipients = (m.to || []).concat(m.cc || []);
+    return recipients.indexOf(agentId) >= 0 || recipients.indexOf("all") >= 0;
+  }
+
+  function renderChat() {
+    var participants = document.getElementById("chat-participants");
+    var totalMessages = state.data.messages.length;
+    var buttons = '<button type="button" class="chat-agent' +
+      (!state.chatAgent ? " active" : "") + '" data-agent="" aria-pressed="' +
+      String(!state.chatAgent) + '"><span class="chat-agent-avatar" style="--agent-hue:210">群</span>' +
+      '<span>全部消息</span><span class="chat-agent-count">' + totalMessages + '</span></button>';
+    state.data.agents.forEach(function (agent) {
+      var active = state.chatAgent === agent.id;
+      var count = state.data.messages.filter(function (m) { return messageInvolvesAgent(m, agent.id); }).length;
+      var hue = Array.from(String(agent.id || "unknown")).reduce(function (n, c) {
+        return (n * 31 + c.charCodeAt(0)) % 360;
+      }, 7);
+      var initial = Array.from(String(agent.label || "?").replace(/[\s_-]+/g, "")).slice(0, 2).join("");
+      buttons += '<button type="button" class="chat-agent' + (active ? " active" : "") +
+        '" data-agent="' + esc(agent.id) + '" title="' + esc(agent.id) + '" aria-pressed="' + String(active) + '">' +
+        '<span class="chat-agent-avatar" style="--agent-hue:' + hue + '">' + esc(initial) + '</span>' +
+        '<span>' + esc(agent.label) + '</span><span class="chat-agent-count">' + count + '</span></button>';
+    });
+    participants.innerHTML = buttons;
+
+    var all = state.data.messages.slice().sort(function (a, b) {
+      return (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0);
+    });
+    var query = state.chatSearch.trim().toLowerCase();
+    var visible = all.filter(function (m) {
+      return messageInvolvesAgent(m, state.chatAgent) &&
+        (!query || [m.body, m.subject, m.from, m.id, m.thread].join(" ").toLowerCase().indexOf(query) >= 0);
+    });
+    var selected = state.chatAgent ? (state.agentsById[state.chatAgent] || {}).label : "全部消息";
+    document.getElementById("chat-selection").textContent = "当前：" + selected;
+    document.getElementById("chat-count").textContent = visible.length + " / " + all.length + " 条消息";
+
+    var html = "";
+    visible.forEach(function (m) {
+      var author = state.agentsById[m.from];
+      var label = author ? author.label : (m.from === "unknown" ? "未署名" : m.from);
+      var initial = Array.from(String(label || "?").replace(/[\s_-]+/g, "")).slice(0, 2).join("");
+      var hue = Array.from(String(m.from || "unknown")).reduce(function (n, c) {
+        return (n * 31 + c.charCodeAt(0)) % 360;
+      }, 7);
+      var mine = state.chatAgent && m.from === state.chatAgent;
+      var to = m.to && m.to.length ? m.to.map(function (id) {
+        return state.agentsById[id] ? state.agentsById[id].label : id;
+      }).join("、") : "全体";
+      var cc = m.cc && m.cc.length ? m.cc.map(function (id) {
+        return state.agentsById[id] ? state.agentsById[id].label : id;
+      }).join("、") : "";
+      var typeClass = TYPE_CLASS[m.type] || "t-unknown";
+      var typeIcon = TYPE_ICON[m.type] || "·";
+      var typeLabel = TYPE_CN[m.type] || m.type || "消息";
+      html += '<article class="chat-row' + (mine ? " mine" : "") + '">' +
+        '<div class="chat-avatar" style="--agent-hue:' + hue + '" aria-hidden="true">' + esc(initial) + '</div>' +
+        '<div class="chat-content"><div class="chat-meta"><' + (author ? 'button type="button" class="chat-agent-name" data-chat-agent="' + esc(m.from) + '" aria-label="筛选 Agent ' + esc(label) + '，ID ' + esc(m.from) + '"' : 'span class="chat-agent-name"') + ' title="Agent ID: ' + esc(m.from) + '"><span class="chat-agent-label">' + esc(label) + '</span><span class="chat-agent-id">' + esc(m.from) + '</span></' + (author ? 'button' : 'span') + '>' +
+        '<time>' + esc(fmtShort(m.at)) + '</time><span class="chat-type ' + typeClass + '" title="消息类型：' + esc(typeLabel) + '"><span class="chat-type-icon" aria-hidden="true">' + esc(typeIcon) + '</span>' + esc(typeLabel) + '</span></div>' +
+        '<div class="chat-bubble"><div class="body markdown-body">' + renderMarkdown(m.body || m.subject || "") + '</div>' +
+        '<div class="chat-details">' +
+        '<span>发送给 ' + esc(to) + '</span>' + (cc ? '<span>抄送 ' + esc(cc) + '</span>' : "") +
+        (m.thread ? '<span>会话 ' + esc(m.thread) + '</span>' : "") +
+        (m.re ? '<a href="#m-' + esc(m.re) + '">↩ 回复 ' + esc(m.re) + '</a>' : "") +
+        (m.id ? '<a href="#m-' + esc(m.id) + '">id ' + esc(m.id) + '</a>' : "") +
+        '</div></div></div></article>';
+    });
+    document.getElementById("chat-messages").innerHTML = html ||
+      '<div class="chat-empty">没有找到符合条件的消息</div>';
+    updateChatLatestButton();
+  }
+
+  function isChatNearBottom() {
+    var scroller = document.getElementById("chat-scroll");
+    return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 96;
+  }
+
+  function updateChatLatestButton() {
+    var scroller = document.getElementById("chat-scroll");
+    var button = document.getElementById("chat-latest");
+    if (!scroller || !button) return;
+    var away = !isChatNearBottom();
+    button.classList.toggle("at-latest", !away && !state.chatHasNew);
+    button.classList.toggle("has-new", state.chatHasNew);
+    document.getElementById("chat-latest-label").textContent = state.chatHasNew
+      ? "有新消息，跳到最新" : (away ? "跳到最新消息" : "已到最新");
+    document.getElementById("chat-bottom-hint").textContent = state.chatHasNew
+      ? "新消息已到达" : (away ? "正在查看较早消息" : "已显示最新消息");
+  }
+
+  function scrollChatToLatest(takeFocus) {
+    var scroller = document.getElementById("chat-scroll");
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
+    if (takeFocus) scroller.focus({ preventScroll: true });
+    state.chatHasNew = false;
+    updateChatLatestButton();
+  }
+
+  function openChat() {
+    if (!state.data) return;
+    document.getElementById("chat-view").classList.remove("hidden");
+    document.body.classList.add("chat-open");
+    renderChat();
+    scrollChatToLatest();
+    document.getElementById("close-chat").focus();
+  }
+
+  function closeChat() {
+    document.getElementById("chat-view").classList.add("hidden");
+    document.body.classList.remove("chat-open");
+    document.getElementById("open-chat").focus();
+  }
+
   function applyFilter() {
     var s = state.search.trim().toLowerCase();
     var only = state.only;
@@ -718,6 +1109,7 @@ button:hover{background:#2f3644}
     renderThreads();
     renderTimeline();
     applyFilter();
+    if (!document.getElementById("chat-view").classList.contains("hidden")) renderChat();
 
     // 直接带 #m-xxx 打开时，锚点元素在渲染前并不存在，浏览器不会重试——
     // 这里补一次定位，纯浏览器（file:// / 静态托管）也能跳。
@@ -767,6 +1159,8 @@ button:hover{background:#2f3644}
         var href = node.getAttribute ? node.getAttribute("href") || "" : "";
         if (href.indexOf("#m-") === 0) {
           ev.preventDefault();
+          var chatView = document.getElementById("chat-view");
+          if (chatView && !chatView.classList.contains("hidden")) closeChat();
           if (location.hash !== href) {
             if (window.history && history.replaceState) history.replaceState(null, "", href);
             else location.hash = href;
@@ -809,10 +1203,19 @@ button:hover{background:#2f3644}
   }
 
   function applyData(data, source) {
+    var chatWasOpen = !document.getElementById("chat-view").classList.contains("hidden");
+    var keepAtBottom = chatWasOpen && isChatNearBottom();
+    var previousCount = state.data ? state.data.messages.length : 0;
+    var newCount = data && data.messages ? data.messages.length : 0;
     state.data = data;
     state.source = source;
     document.getElementById("err").style.display = "none";
     renderAll();
+    if (chatWasOpen) {
+      state.chatHasNew = !keepAtBottom && newCount > previousCount;
+      if (keepAtBottom) scrollChatToLatest();
+      else updateChatLatestButton();
+    }
   }
 
   function loadSnapshot() {
@@ -862,12 +1265,26 @@ button:hover{background:#2f3644}
     if ((q.value || "") !== state.search) onSearch();
   }, 250);
 
-  document.getElementById("reload").addEventListener("click", function () {
-    var btn = this;
-    if (btn.disabled) return;
-    btn.disabled = true;
-    btn.textContent = "拉取中…";
-    var done = function () { btn.disabled = false; btn.textContent = "刷新数据"; };
+  function refreshData() {
+    if (state.refreshing) return;
+    state.refreshing = true;
+    var dashboardButton = document.getElementById("reload");
+    var chatButton = document.getElementById("chat-reload");
+    var status = document.getElementById("chat-refresh-status");
+    dashboardButton.disabled = true;
+    chatButton.disabled = true;
+    dashboardButton.textContent = "拉取中…";
+    chatButton.textContent = "刷新中…";
+    status.textContent = "正在同步消息…";
+
+    var finish = function (message) {
+      state.refreshing = false;
+      dashboardButton.disabled = false;
+      chatButton.disabled = false;
+      dashboardButton.textContent = "刷新数据";
+      chatButton.textContent = "刷新消息";
+      status.textContent = message;
+    };
 
     fetch("api/bus?refresh=1", { cache: "no-store" })
       .then(function (r) {
@@ -877,13 +1294,89 @@ button:hover{background:#2f3644}
       .then(function (d) {
         if (!d || !d.messages) throw new Error("数据为空");
         applyData(d, "live");
+        finish("消息已更新");
       })
-      // 服务端接口不可用（纯静态托管 / file://）：退回重新注入数据文件
+      // 服务端接口不可用（纯静态托管 / file://）：退回同目录快照。
       .catch(function () {
-        return injectDataScript(true).then(loadSnapshot, loadSnapshot);
+        return injectDataScript(true).then(function (loaded) {
+          if (!loaded) {
+            finish("刷新失败，仍显示当前消息");
+            return;
+          }
+          loadSnapshot();
+          finish("已重新加载本地数据");
+        });
       })
-      .then(done, done);
+      .catch(function () {
+        finish("刷新失败，仍显示旧消息");
+      });
+  }
+
+  document.getElementById("reload").addEventListener("click", refreshData);
+  document.getElementById("chat-reload").addEventListener("click", refreshData);
+  document.getElementById("chat-scroll").addEventListener("scroll", function () {
+    updateChatLatestButton();
+  }, { passive: true });
+  document.getElementById("chat-latest").addEventListener("click", function () {
+    scrollChatToLatest(true);
   });
+
+  document.getElementById("open-chat").addEventListener("click", openChat);
+  document.getElementById("close-chat").addEventListener("click", closeChat);
+  function selectChatAgent(agentId) {
+    state.chatAgent = agentId || "";
+    renderChat();
+    scrollChatToLatest();
+  }
+
+  document.getElementById("chat-participants").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-agent]");
+    if (!button) return;
+    selectChatAgent(button.getAttribute("data-agent"));
+  });
+  document.getElementById("chat-messages").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-chat-agent]");
+    if (!button) return;
+    selectChatAgent(button.getAttribute("data-chat-agent"));
+  });
+  document.getElementById("chat-search").addEventListener("input", function () {
+    state.chatSearch = this.value;
+    renderChat();
+    scrollChatToLatest();
+  });
+  document.addEventListener("keydown", function (event) {
+    var chatView = document.getElementById("chat-view");
+    if (chatView.classList.contains("hidden")) return;
+    if (event.key === "Escape") {
+      closeChat();
+      return;
+    }
+    if (event.key === "Tab") {
+      var focusable = chatView.querySelectorAll('button:not(:disabled), input:not(:disabled)');
+      if (!focusable.length) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  var backToTop = document.getElementById("back-to-top");
+  var updateBackToTop = function () {
+    var visible = (window.pageYOffset || document.documentElement.scrollTop || 0) > 300;
+    backToTop.classList.toggle("visible", visible);
+    backToTop.setAttribute("aria-hidden", String(!visible));
+  };
+  window.addEventListener("scroll", updateBackToTop, { passive: true });
+  backToTop.addEventListener("click", function () {
+    var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+  });
+  updateBackToTop();
 
   load();
 })();
